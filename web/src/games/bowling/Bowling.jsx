@@ -94,8 +94,11 @@ function pinGeometry() {
   const prof = [
     [0.0, 0], [0.026, 0], [0.04, 0.03], [0.058, 0.09], [0.06, 0.13], [0.052, 0.18], [0.034, 0.235], [0.026, 0.27],
     [0.03, 0.31], [0.033, 0.34], [0.028, 0.365], [0.015, 0.378], [0.0, PIN_H],
-  ].map(([r, y]) => new THREE.Vector2(r, y - PIN_H / 2));
-  const g = new THREE.LatheGeometry(prof, 24);
+  ].map(([r, y]) => new THREE.Vector2(r, y));
+  // smooth the profile with a spline so the pin reads as one continuous glossy surface
+  const curve = new THREE.SplineCurve(prof);
+  const pts = curve.getPoints(64).map((v) => new THREE.Vector2(Math.max(0, v.x), v.y - PIN_H / 2));
+  const g = new THREE.LatheGeometry(pts, 48);
   // red neck stripes via vertex colors
   const pos = g.attributes.position;
   const colors = [];
@@ -107,6 +110,39 @@ function pinGeometry() {
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   g.computeVertexNormals();
   return g;
+}
+
+function marbleTexture(color) {
+  const cv = document.createElement('canvas');
+  cv.width = 512;
+  cv.height = 256;
+  const ctx = cv.getContext('2d');
+  const base = new THREE.Color(color);
+  ctx.fillStyle = base.getStyle();
+  ctx.fillRect(0, 0, 512, 256);
+  // swirly marbling: many translucent sine ribbons
+  for (let i = 0; i < 46; i++) {
+    const c = base.clone().offsetHSL((Math.random() - 0.5) * 0.08, 0, (Math.random() - 0.4) * 0.35);
+    ctx.strokeStyle = `rgba(${(c.r * 255) | 0},${(c.g * 255) | 0},${(c.b * 255) | 0},${0.25 + Math.random() * 0.4})`;
+    ctx.lineWidth = 2 + Math.random() * 10;
+    ctx.beginPath();
+    const y0 = Math.random() * 256;
+    const amp = 10 + Math.random() * 40;
+    const f = 0.01 + Math.random() * 0.03;
+    const ph = Math.random() * 6;
+    for (let x = 0; x <= 512; x += 8) ctx.lineTo(x, y0 + Math.sin(x * f + ph) * amp + Math.sin(x * f * 2.7) * amp * 0.3);
+    ctx.stroke();
+  }
+  // finger holes
+  ctx.fillStyle = '#111';
+  for (const [x, y, r] of [[256, 70, 11], [236, 104, 9], [276, 104, 9]]) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 // ---------------- physics world ----------------
@@ -186,7 +222,14 @@ function Scene({ game }) {
         bm.visible = true;
         bm.position.set(g.aimX + 0.17, 0.32 + (g.phase === 'grip' ? Math.sin(state.clock.elapsedTime * 3) * 0.01 : 0), START_Z + 0.05);
       } else bm.visible = false;
-      bm.material.color.set(g.currentColor());
+      const col = g.currentColor();
+      if (bm.userData.col !== col) {
+        bm.userData.col = col;
+        bm.material.map?.dispose();
+        bm.material.map = marbleTexture(col);
+        bm.material.color.set('#ffffff');
+        bm.material.needsUpdate = true;
+      }
     }
     // camera choreography
     const want = new THREE.Vector3();
@@ -269,8 +312,8 @@ function Scene({ game }) {
         <mesh key={i} ref={(el) => (pinRefs.current[i] = el)} geometry={pinGeo} material={pinMat} castShadow />
       ))}
       <mesh ref={ballRef} castShadow>
-        <sphereGeometry args={[BALL_R, 32, 24]} />
-        <meshPhysicalMaterial color="#19b8ff" roughness={0.1} clearcoat={1} clearcoatRoughness={0.05} metalness={0.1} />
+        <sphereGeometry args={[BALL_R, 48, 32]} />
+        <meshPhysicalMaterial color="#ffffff" roughness={0.12} clearcoat={1} clearcoatRoughness={0.03} metalness={0.05} />
       </mesh>
       {cur && <Avatar player={cur} anim={g.anim} position={[g.aimX, 0, START_Z]} rotation={[0, Math.PI, 0]} />}
     </>
@@ -559,7 +602,7 @@ class BowlingGame {
 function Scoreboard({ game }) {
   const g = game.current;
   return (
-    <div className="bowl-board glass">
+    <div className={`bowl-board glass ${g.phase === 'roll' || g.phase === 'settle' ? 'dim' : ''}`}>
       <table>
         <thead>
           <tr>

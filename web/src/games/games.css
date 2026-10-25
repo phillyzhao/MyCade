@@ -1,5 +1,6 @@
 /* in-game HUD components shared across games */
-.bowl-board { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); padding: 8px 12px; border-radius: 20px; }
+.bowl-board { position: absolute; right: 14px; top: 12px; padding: 6px 8px; border-radius: 16px; transform-origin: top right; transform: scale(0.82); transition: opacity 0.4s; }
+.bowl-board.dim { opacity: 0.3; }
 .bowl-board table { border-collapse: separate; border-spacing: 4px 3px; font-weight: 800; }
 .bowl-board th { font: 700 12px var(--font-pixel); color: var(--text-dim); padding: 0 6px; }
 .bowl-board th.cur { color: var(--ink); background: var(--yellow); border-radius: 6px; }
