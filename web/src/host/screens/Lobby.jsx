@@ -16,7 +16,7 @@ export function addCpu() {
   while (used.has(slot)) slot++;
   const n = h.players.filter((p) => p.cpu).length;
   const color = PLAYER_COLORS.find((c) => !h.players.some((p) => p.color === c.hex))?.hex || PLAYER_COLORS[slot % 8].hex;
-  h.upsertPlayer({ id: `cpu${Date.now() % 100000}`, slot, name: `CPU ${CPU_NAMES[n % CPU_NAMES.length]}`, color, cpu: true, connected: true });
+  h.upsertPlayer({ id: `cpu${Date.now() % 100000}_${n}`, slot, name: `CPU ${CPU_NAMES[n % CPU_NAMES.length]}`, color, cpu: true, connected: true });
   sound.sfx('join');
 }
 
@@ -100,7 +100,7 @@ export default function Lobby() {
         <button className="gloss-btn silver small" onClick={addKeyboard}>
           + Keyboard
         </button>
-        <div className="lobby-hint pixel">{act.length ? 'press A on any phone to start' : 'waiting for players…'}</div>
+        <div className="lobby-hint pixel">{act.length >= 4 ? 'press A on any phone to start' : act.length ? `${act.length}/4 players · CPUs fill empty seats` : 'waiting for players… (4 per game)'}</div>
         <button className="gloss-btn green big-cta" disabled={!act.length} onClick={() => (sound.sfx('select'), useHost.getState().setScreen('menu'))}>
           LET'S PLAY ▶
         </button>

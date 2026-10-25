@@ -58,7 +58,9 @@ export default function Menu() {
 
   const launch = (i) => {
     const g = GAMES[i];
-    if (g.id === 'tennis' && act.length < 2) addCpu();
+    // Mystery Stack rules: every game is played with at least 4; CPUs fill empty seats
+    const have = activePlayers(useHost.getState().players).length;
+    for (let i = have; i < 4; i++) addCpu();
     sound.sfx('select');
     useHost.getState().setScreen('game', { game: g.id });
   };
