@@ -1,0 +1,174 @@
+/* Mycade design system: late-night arcade. Dark cabinet base, red/yellow comic bursts,
+   chunky outlined type, pixel labels, lime + purple accents. */
+:root {
+  --bg: #120c0e;
+  --bg-2: #1a1214;
+  --panel: #1e1518;
+  --panel-2: #271b1f;
+  --line: #3b2a30;
+  --line-hi: #57414a;
+  --text: #fff3e2;
+  --text-dim: #b9a59c;
+  --red: #ff2d2d;
+  --red-2: #d4141b;
+  --red-deep: #6e0b0f;
+  --yellow: #ffd23a;
+  --yellow-2: #ffb21a;
+  --orange: #ff7a1a;
+  --lime: #9dff3a;
+  --lime-2: #5fd11a;
+  --purple: #b04bff;
+  --purple-2: #7a1fd6;
+  --ink: #1a0a06;
+  --radius: 18px;
+  --font-ui: 'Rubik', system-ui, sans-serif;
+  --font-display: 'Lilita One', 'Rubik', system-ui, sans-serif;
+  --font-pixel: 'Silkscreen', ui-monospace, monospace;
+  --bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --hard: 0 5px 0 #000;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+button { font-family: inherit; cursor: pointer; }
+input { font-family: inherit; }
+
+.boot { display: grid; place-items: center; height: 100%; font: 400 22px var(--font-pixel); color: var(--yellow); letter-spacing: 0.04em; }
+
+/* ---------- arcade backdrop: dark cabinet with a subtle red glow ---------- */
+.arcade-bg {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  background:
+    radial-gradient(70% 55% at 50% 0%, rgba(255, 45, 45, 0.22), transparent 70%),
+    radial-gradient(50% 40% at 100% 100%, rgba(176, 75, 255, 0.14), transparent 70%),
+    radial-gradient(45% 35% at 0% 100%, rgba(157, 255, 58, 0.08), transparent 70%),
+    var(--bg);
+}
+.arcade-bg::after {
+  /* scanlines */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.18;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.5) 0 1px, transparent 1px 3px);
+}
+.arcade-bg .tile-pattern {
+  position: absolute; inset: -20%; opacity: 0.05; transform: rotate(-12deg);
+  background-image: radial-gradient(circle at 50% 50%, #fff 0 18%, transparent 19%), radial-gradient(circle at 50% 50%, #fff 0 18%, transparent 19%);
+  background-size: 120px 120px; background-position: 0 0, 60px 60px;
+  animation: slideBg 40s linear infinite;
+}
+@keyframes slideBg { to { transform: rotate(-12deg) translate(120px, 120px); } }
+
+/* comic starburst panel (hero banners, intro cards) */
+.burst, .panel.burst {
+  position: relative; overflow: hidden; isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 55%, transparent 0 8%, rgba(0, 0, 0, 0) 8%),
+    repeating-conic-gradient(from 0deg at 50% 60%, #c3121a 0deg 9deg, #7a0a10 9deg 18deg);
+}
+.burst::before {
+  /* polka dots */
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background-image: radial-gradient(circle, #ff3b3b 0 11px, transparent 12px);
+  background-size: 78px 78px; background-position: 12px 20px; opacity: 0.85;
+}
+.burst::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 55%, transparent 35%, rgba(25, 3, 5, 0.75) 100%);
+}
+
+/* ---------- panels + buttons ---------- */
+.panel, .glass {
+  position: relative;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 0 #000, 0 18px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.gloss-btn {
+  --c: var(--yellow); --c2: var(--yellow-2); --t: var(--ink);
+  position: relative; border: 3px solid #000; color: var(--t);
+  font: 400 20px var(--font-display); letter-spacing: 0.03em;
+  padding: 12px 26px; border-radius: 14px;
+  background: linear-gradient(180deg, var(--c), var(--c2));
+  box-shadow: 0 5px 0 #000, inset 0 3px 0 rgba(255, 255, 255, 0.45), inset 0 -4px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.12s var(--bounce), filter 0.12s;
+}
+.gloss-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.gloss-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #000, inset 0 3px 0 rgba(255, 255, 255, 0.35); }
+.gloss-btn.green { --c: var(--lime); --c2: var(--lime-2); }
+.gloss-btn.orange { --c: #ffb04a; --c2: var(--orange); }
+.gloss-btn.pink, .gloss-btn.red { --c: #ff5a5a; --c2: var(--red-2); --t: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
+.gloss-btn.silver { --c: var(--panel-2); --c2: var(--panel); --t: var(--yellow); border-color: var(--yellow); box-shadow: 0 5px 0 #000; }
+.gloss-btn.small { font-size: 15px; padding: 8px 16px; }
+.gloss-btn:disabled { filter: grayscale(0.8) brightness(0.7); cursor: default; transform: none; }
+
+/* chunky 3D comic title: yellow face, dark outline, extruded red/black shadow */
+.display-title {
+  font-family: var(--font-display); font-weight: 400; line-height: 0.92; margin: 0; letter-spacing: 0.01em;
+  color: var(--yellow);
+  -webkit-text-stroke: 3px #2a0604; paint-order: stroke fill;
+  text-shadow:
+    0 2px 0 #ff9a1a, 0 4px 0 #e5541a, 0 6px 0 #b8240f, 0 8px 0 #7a0a10, 0 10px 0 #3a0306,
+    0 14px 24px rgba(0, 0, 0, 0.6);
+}
+.pixel-title {
+  font-family: var(--font-pixel); font-weight: 700; color: #fff; letter-spacing: 0.04em;
+  -webkit-text-stroke: 2px #000; paint-order: stroke fill;
+  text-shadow: 3px 3px 0 #000;
+}
+.pixel { font-family: var(--font-pixel); letter-spacing: 0.04em; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 10px;
+  font: 400 13px var(--font-pixel); color: var(--text); letter-spacing: 0.03em;
+  background: var(--panel-2); border: 2px solid var(--line-hi);
+}
+
+.player-dot {
+  width: 16px; height: 16px; border-radius: 50%; flex: none; background: var(--pc);
+  border: 2px solid #000; box-shadow: 0 0 10px var(--pc);
+}
+
+/* ---------- popups: chunky comic text ---------- */
+.popup-layer { position: fixed; inset: 0; pointer-events: none; z-index: 50; display: grid; place-items: center; }
+.popup { position: absolute; text-align: center; animation: popIn 0.5s var(--bounce) both, popOut 0.3s ease-in both; }
+.popup .big {
+  font: 400 clamp(70px, 13vw, 190px) var(--font-display); line-height: 0.9; letter-spacing: 0.01em;
+  color: var(--yellow); -webkit-text-stroke: 5px #2a0604; paint-order: stroke fill; transform: rotate(-4deg);
+  text-shadow: 0 3px 0 #ff9a1a, 0 6px 0 #e5541a, 0 9px 0 #b8240f, 0 12px 0 #7a0a10, 0 15px 0 #2a0306, 0 24px 40px rgba(0, 0, 0, 0.6);
+}
+.popup.good .big { color: var(--lime); text-shadow: 0 3px 0 #5fd11a, 0 6px 0 #3a9a10, 0 9px 0 #1f6a08, 0 12px 0 #0f3a04, 0 24px 40px rgba(0, 0, 0, 0.6); }
+.popup.info .big { color: #fff; text-shadow: 0 3px 0 #c9b2ff, 0 6px 0 var(--purple), 0 9px 0 var(--purple-2), 0 12px 0 #3a0a6e, 0 24px 40px rgba(0, 0, 0, 0.6); }
+.popup.bad .big { color: #cfc6c2; font-size: clamp(56px, 9vw, 130px); text-shadow: 0 3px 0 #8a7f7a, 0 6px 0 #5a504c, 0 9px 0 #2e2826, 0 20px 30px rgba(0, 0, 0, 0.6); transform: rotate(3deg); }
+.popup .sub { margin-top: 10px; font: 700 clamp(18px, 2.2vw, 30px) var(--font-pixel); color: #fff; -webkit-text-stroke: 2px #000; paint-order: stroke fill; text-shadow: 3px 3px 0 #000; }
+.popup .spark { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; background: var(--yellow); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: spark 0.9s ease-out both; }
+@keyframes popIn { 0% { transform: scale(0.2) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes popOut { to { transform: scale(1.25); opacity: 0; } }
+@keyframes spark { 0% { transform: translate(-50%, -50%) scale(0.4) rotate(0); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.6) rotate(90deg); opacity: 0; } }
+
+.shake { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+@keyframes shake {
+  10%, 90% { transform: translate3d(-2px, 1px, 0); }
+  20%, 80% { transform: translate3d(5px, -2px, 0); }
+  30%, 50%, 70% { transform: translate3d(-9px, 3px, 0); }
+  40%, 60% { transform: translate3d(9px, -3px, 0); }
+}
+@keyframes pulse { 0%, 100% { opacity: 0.85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+
+.confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.fade-in { animation: fadeIn 0.35s ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.bounce-in { animation: popIn 0.5s var(--bounce) both; }
+.wobble:hover { animation: wobble 0.5s var(--bounce); }
+@keyframes wobble { 0% { transform: scale(1); } 30% { transform: scale(1.05, 0.96) rotate(-1deg); } 60% { transform: scale(0.98, 1.03) rotate(1deg); } 100% { transform: scale(1); } }
