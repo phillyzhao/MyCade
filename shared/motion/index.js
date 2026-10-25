@@ -16,7 +16,8 @@ const map01 = (v, lo, hi) => clamp((v - lo) / (hi - lo), 0, 1);
 export class MotionEngine {
   constructor(cfg = MOTION) {
     this.cfg = cfg;
-    this.sign = 1; // iOS reports accelerationIncludingGravity inverted vs Android; calibration fixes it
+    // iOS Safari reports accelerationIncludingGravity inverted vs the spec/Android; calibration refines it
+    this.sign = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent || '') ? -1 : 1;
     this.g = { x: 0, y: 0, z: cfg.gravity };
     this.g0 = { x: 0, y: 0, z: cfg.gravity };
     this.steerMode = 'landscapeLeft';
@@ -60,11 +61,11 @@ export class MotionEngine {
 
   /** Zero the steering wheel at the current hold. */
   zeroSteer() {
-    const g = this.g;
-    if (Math.abs(g.x) > Math.abs(g.y) * 0.7) this.steerMode = g.x > 0 ? 'landscapeLeft' : 'landscapeRight';
-    else this.steerMode = 'portrait';
+    this.updateSteerMode();
     this.steerZero = 0;
-    this.steerZero = this.rawSteerAngle();
+    const a = this.rawSteerAngle();
+    // only re-centre small offsets; a big angle means the phone is mid-turn, not resting
+    if (Math.abs(a) < 0.5) this.steerZero = a;
   }
 
   rawSteerAngle() {
@@ -72,6 +73,24 @@ export class MotionEngine {
     if (this.steerMode === 'landscapeLeft') return Math.atan2(g.y, g.x);
     if (this.steerMode === 'landscapeRight') return Math.atan2(-g.y, -g.x);
     return Math.atan2(-g.x, g.y);
+  }
+
+  /** Pick the wheel orientation from where gravity points in the screen plane (with hysteresis). */
+  updateSteerMode() {
+    const g = this.g;
+    const ax = Math.abs(g.x);
+    const ay = Math.abs(g.y);
+    const cur = this.steerMode;
+    if (cur === 'portrait' ? ax > ay * 1.25 : ax > ay * 0.8) {
+      const m = g.x > 0 ? 'landscapeLeft' : 'landscapeRight';
+      if (m !== cur) {
+        this.steerMode = m;
+        this.steerZero = 0;
+      }
+    } else if (ay > ax * 1.25 && cur !== 'portrait') {
+      this.steerMode = 'portrait';
+      this.steerZero = 0;
+    }
   }
 
   setButton(name, down) {
@@ -130,7 +149,8 @@ export class MotionEngine {
       cal.sum.x += s.accG.x; cal.sum.y += s.accG.y; cal.sum.z += s.accG.z; cal.n++;
       if (now >= cal.until && cal.n > 3) {
         const avg = { x: cal.sum.x / cal.n, y: cal.sum.y / cal.n, z: cal.sum.z / cal.n };
-        this.sign = avg.z >= 0 ? 1 : -1;
+        // only trust the sign if the phone really was flat (face up); otherwise keep the platform default
+        if (Math.abs(avg.z) > Math.abs(avg.x) && Math.abs(avg.z) > Math.abs(avg.y) && Math.abs(avg.z) > 6) this.sign = avg.z >= 0 ? 1 : -1;
         this.g0 = { x: avg.x * this.sign, y: avg.y * this.sign, z: avg.z * this.sign };
         this.g = { ...this.g0 };
         this.state.g = this.g;
@@ -148,7 +168,8 @@ export class MotionEngine {
     st.tilt.x = lerp(st.tilt.x, tx, 1 - c.tilt.smoothing);
     st.tilt.y = lerp(st.tilt.y, ty, 1 - c.tilt.smoothing);
 
-    // steering
+    // steering: phone held like a wheel, turning it in its own screen plane
+    this.updateSteerMode();
     let ang = this.rawSteerAngle() - this.steerZero;
     if (ang > Math.PI) ang -= 2 * Math.PI;
     if (ang < -Math.PI) ang += 2 * Math.PI;

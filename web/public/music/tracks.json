@@ -1,0 +1,8 @@
+{
+  "menu": "/music/menu.mp3",
+  "bowling": "/music/bowling.mp3",
+  "tennis": "/music/tennis.mp3",
+  "racing": "/music/racing.mp3",
+  "balance": "/music/balance.mp3",
+  "results": "/music/results.mp3"
+}

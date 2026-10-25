@@ -513,7 +513,7 @@ export function BowlingAlley({ laneWidth = 1.06, headZ = -14 }) {
     const cols = [RED, YELLOW, LIME, PURPLE, CYAN, PINK, ORANGE, '#1aa3ff'];
     let k = 0;
     for (const bx of [-3.3, -1.3, 1.3, 3.3])
-      for (let i = 0; i < 3; i++) out.push({ p: [bx, 0.64, 0.25 + i * 0.25 + 1.6 - 0.25], c: cols[k++ % cols.length] });
+      for (let i = 0; i < 3; i++) out.push({ p: [bx, 0.64, 2.3 + i * 0.25], c: cols[k++ % cols.length] });
     // wall rack (two shelves) along the right wall near the seating
     for (let s = 0; s < 2; s++)
       for (let i = 0; i < 8; i++) out.push({ p: [W - 0.32, 0.42 + s * 0.42, 4.2 + i * 0.27], c: cols[(i + s * 3) % cols.length] });
@@ -610,7 +610,9 @@ export function BowlingAlley({ laneWidth = 1.06, headZ = -14 }) {
             <RoundedBox args={[cx < 5 ? 0.56 : 1, 0.62, 4.2]} radius={0.06} smoothness={2} position={[0, 0.31, 0]}>
               <meshPhysicalMaterial color="#251832" clearcoat={1} roughness={0.25} />
             </RoundedBox>
-            <Neon position={[0, 0.63, 0]} size={[cx < 5 ? 0.5 : 0.94, 0.02, 4.1]} color={BRIGHTS[(Math.round(cx) + (s > 0 ? 2 : 0)) % BRIGHTS.length]} k={1.4} />
+            {[-1, 1].map((e) => (
+              <Neon key={e} position={[e * ((cx < 5 ? 0.56 : 1) / 2 - 0.05), 0.625, 0]} size={[0.035, 0.02, 4.1]} color={BRIGHTS[(Math.round(cx) + (s > 0 ? 2 : 0)) % BRIGHTS.length]} k={1.4} />
+            ))}
           </group>
         )),
       )}
@@ -640,12 +642,12 @@ export function BowlingAlley({ laneWidth = 1.06, headZ = -14 }) {
         <planeGeometry args={[W * 2, ceilY + 0.6]} />
         <meshStandardMaterial color="#14082a" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 2.7, backZ + 0.05]}>
-        <planeGeometry args={[5.2, 1.3]} />
+      <mesh position={[0, 2.62, backZ + 0.05]}>
+        <planeGeometry args={[6, 1.5]} />
         <meshBasicMaterial map={tex.sign} color={[1.35, 1.35, 1.35]} transparent toneMapped={false} depthWrite={false} />
       </mesh>
       {[[-4.6, PURPLE], [4.6, LIME]].map(([x, c]) => (
-        <group key={`st${x}`} position={[x, 2.7, backZ + 0.06]}>
+        <group key={`st${x}`} position={[x, 2.62, backZ + 0.06]}>
           {[0, 1, 2].map((i) => (
             <Neon key={i} position={[0, (i - 1) * 0.28, 0]} size={[0.9 - i * 0.18, 0.06, 0.03]} color={c} k={1.7} />
           ))}
@@ -709,7 +711,7 @@ export function BowlingAlley({ laneWidth = 1.06, headZ = -14 }) {
 
       {/* overhead score monitors facing the bowler */}
       {[-1, 1].map((s, i) => (
-        <group key={`om${s}`} position={[s * 1.1, 2.82, -1.6]} rotation={[0.12, 0, 0]}>
+        <group key={`om${s}`} position={[s * 1.1, 2.86, -2.6]} rotation={[0.1, 0, 0]}>
           <RoundedBox args={[1.5, 0.92, 0.12]} radius={0.05} smoothness={2}>
             <meshPhysicalMaterial color="#111" clearcoat={1} roughness={0.2} />
           </RoundedBox>
@@ -725,10 +727,10 @@ export function BowlingAlley({ laneWidth = 1.06, headZ = -14 }) {
       ))}
 
       {/* ball returns between lanes + balls */}
-      <BallReturn position={[-1.3, 0, 1.6]} color={PURPLE} accent={YELLOW} />
-      <BallReturn position={[1.3, 0, 1.6]} color={RED} accent={LIME} />
-      <BallReturn position={[-3.3, 0, 1.6]} color="#1aa3ff" accent={PINK} />
-      <BallReturn position={[3.3, 0, 1.6]} color={ORANGE} accent={CYAN} />
+      <BallReturn position={[-1.3, 0, 2.55]} color={PURPLE} accent={YELLOW} />
+      <BallReturn position={[1.3, 0, 2.55]} color={RED} accent={LIME} />
+      <BallReturn position={[-3.3, 0, 2.55]} color="#1aa3ff" accent={PINK} />
+      <BallReturn position={[3.3, 0, 2.55]} color={ORANGE} accent={CYAN} />
       <instancedMesh ref={ballRef} args={[undefined, undefined, balls.length]} castShadow>
         <sphereGeometry args={[0.12, 20, 14]} />
         <meshPhysicalMaterial roughness={0.12} clearcoat={1} clearcoatRoughness={0.04} metalness={0.05} />
@@ -980,7 +982,7 @@ function Grandstand({ position, rotation = 0, length, rows, rowD = 0.8, rowH = 0
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (length / 2 + 0.1), backH / 2, depth / 2]}>
           <boxGeometry args={[0.2, backH, depth + 0.4]} />
-          <meshPhysicalMaterial color={DARK} clearcoat={0.8} roughness={0.3} />
+          <meshPhysicalMaterial color="#3b1d55" clearcoat={0.8} roughness={0.3} />
         </mesh>
       ))}
     </group>
@@ -1267,8 +1269,8 @@ function coinTex() {
 }
 
 const ISLANDS = [
-  [-14, -3, -14, 3.2], [15, -5, -16, 3.6], [-25, 1.5, -26, 4.2], [25, 2.5, -28, 3.4], [-8.5, -7, -22, 2.4],
-  [9, 4, -34, 2.8], [-35, -4, -36, 5], [36, -2, -38, 4.6], [0, -8, -30, 2.6], [-12.5, -6.5, -6, 2], [14, -1.5, -8, 2.2],
+  [-13, -6, -14, 3.2], [14, -8, -16, 3.6], [-22, -3, -26, 4.2], [22, -2, -27, 3.4], [-7.5, -12, -20, 2.4],
+  [8, -4.5, -33, 2.8], [-32, -8, -36, 5], [32, -6, -38, 4.6], [0, -14, -26, 2.6], [-11, -9, -5, 2], [12, -11, -7, 2.2],
 ];
 
 function Island({ position, r, seed }) {
@@ -1318,7 +1320,7 @@ function Island({ position, r, seed }) {
         </group>
       ))}
       {deco.cab && (
-        <group position={[Math.cos(deco.cabA) * r * 0.45, 0.2, Math.sin(deco.cabA) * r * 0.45]} rotation={[0, -deco.cabA + Math.PI / 2, 0]}>
+        <group position={[Math.cos(deco.cabA) * r * 0.45, 0.2, Math.abs(Math.sin(deco.cabA)) * r * 0.4]} rotation={[0, (deco.cabA % 1) - 0.5, 0]}>
           <RoundedBox args={[0.7, 1.4, 0.6]} radius={0.1} smoothness={2} position={[0, 0.7, 0]}>
             <meshPhysicalMaterial color={RED} clearcoat={1} roughness={0.2} />
           </RoundedBox>
@@ -1345,7 +1347,7 @@ function Balloons({ count = 22 }) {
     while (out.length < count) {
       const x = (r() - 0.5) * 80;
       const z = -10 - r() * 32;
-      out.push({ x, y: -8 + r() * 15, z, sp: 0.25 + r() * 0.35, ph: r() * 6, s: 0.6 + r() * 0.5, c: BRIGHTS[out.length % BRIGHTS.length] });
+      out.push({ x, y: -16 + r() * 22, z, sp: 0.25 + r() * 0.35, ph: r() * 6, s: 0.6 + r() * 0.5, c: BRIGHTS[out.length % BRIGHTS.length] });
     }
     return out;
   }, [count]);
@@ -1362,7 +1364,7 @@ function Balloons({ count = 22 }) {
     const t = st.clock.elapsedTime;
     data.forEach((d, i) => {
       d.y += d.sp * dt;
-      if (d.y > 9) d.y = -10;
+      if (d.y > 6) d.y = -18;
       v.set(d.x + Math.sin(t * 0.4 + d.ph) * 0.6, d.y, d.z);
       sv.set(d.s, d.s * 1.18, d.s);
       m.compose(v, q, sv);
@@ -1400,7 +1402,7 @@ function Coins({ count = 16 }) {
       const x = (r() - 0.5) * 60;
       const z = -6 - r() * 30;
       if (Math.abs(x) < 8 && z > -10) continue;
-      out.push({ x, y: -5 + r() * 10, z, sp: 1 + r() * 1.5, ph: r() * 6, s: 0.5 + r() * 0.45 });
+      out.push({ x, y: -11 + r() * 12, z, sp: 1 + r() * 1.5, ph: r() * 6, s: 0.5 + r() * 0.45 });
     }
     return out;
   }, [count]);
@@ -1431,7 +1433,7 @@ function Coins({ count = 16 }) {
   return <instancedMesh ref={ref} args={[geo, mats, data.length]} frustumCulled={false} />;
 }
 
-function NeonRainbow({ position = [0, -9, -38], R = 15 }) {
+function NeonRainbow({ position = [0, -15, -36], R = 13.5 }) {
   const cols = [RED, ORANGE, YELLOW, LIME, CYAN, PURPLE];
   return (
     <group position={position}>

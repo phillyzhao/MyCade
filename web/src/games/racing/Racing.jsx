@@ -12,6 +12,8 @@ import { sendScreen, sendHaptic } from '../../host/net.js';
 import { popup } from '../../ui/fx.jsx';
 import { sound } from '../../sound.js';
 import { AvatarHead } from '../../host/screens/PlayerBadge.jsx';
+import { Kart } from '../../three/models/Kart.jsx';
+import { Trees, Bushes, Rocks, Tires, Balloons, Banners, Grandstand } from '../../three/models/Props.jsx';
 
 const LAPS = 3;
 const HALF_W = 1.9;
@@ -84,6 +86,49 @@ function nearestGlobal(x, z) {
   }
   return best;
 }
+
+// trackside dressing, placed off the asphalt and away from other stretches of track
+const SCENERY = (() => {
+  const out = { trees: [], bushes: [], rocks: [], tires: [], balloons: [], banners: [] };
+  const clear = (x, z, margin) => {
+    const ni = nearestGlobal(x, z);
+    return Math.hypot(SAMPLES[ni].x - x, SAMPLES[ni].z - z) > HALF_W + margin;
+  };
+  for (let i = 0; i < 90; i++) {
+    const k = (i * 37) % N_SAMPLES;
+    const side = i % 2 ? 1 : -1;
+    const off = WALL_OFF + 1.6 + (i % 5) * 1.7;
+    const x = SAMPLES[k].x + NORMALS[k].x * side * off;
+    const z = SAMPLES[k].z + NORMALS[k].z * side * off;
+    if (!clear(x, z, 3)) continue;
+    const item = { position: [x, 0, z], rotation: i * 1.7, scale: 0.8 + ((i * 13) % 7) * 0.08 };
+    if (i % 3 === 0) out.bushes.push(item);
+    else if (i % 7 === 0) out.rocks.push(item);
+    else out.trees.push(item);
+  }
+  // tire stacks on the outside of the tightest corners, balloons + banners along straights
+  for (const u of [0.12, 0.28, 0.55, 0.72, 0.93]) {
+    const k = Math.floor(u * N_SAMPLES);
+    for (const side of [-1, 1]) {
+      const x = SAMPLES[k].x + NORMALS[k].x * side * (WALL_OFF + 0.6);
+      const z = SAMPLES[k].z + NORMALS[k].z * side * (WALL_OFF + 0.6);
+      if (clear(x, z, 1.5)) out.tires.push({ position: [x, 0, z] });
+    }
+  }
+  for (let i = 0; i < 16; i++) {
+    const k = (i * 41 + 9) % N_SAMPLES;
+    const side = i % 2 ? 1 : -1;
+    const x = SAMPLES[k].x + NORMALS[k].x * side * (WALL_OFF + 1.1);
+    const z = SAMPLES[k].z + NORMALS[k].z * side * (WALL_OFF + 1.1);
+    if (!clear(x, z, 1.5)) continue;
+    if (i % 2) out.balloons.push({ position: [x, 0.7, z] });
+    else out.banners.push({ position: [x, 0, z], rotation: Math.atan2(TANGENTS[k].x, TANGENTS[k].z), variant: i % 5 });
+  }
+  const s = SAMPLES[8];
+  const n = NORMALS[8];
+  out.stand = { position: [s.x + n.x * (WALL_OFF + 4), 0, s.z + n.z * (WALL_OFF + 4)], rotation: Math.atan2(-n.x, -n.z) };
+  return out;
+})();
 
 function wallGeometry(off, y0, y1) {
   const pos = [];
@@ -190,6 +235,7 @@ class RaceGame {
         gas = inp.gas || inp.buttons?.a;
         brake = inp.brake;
       }
+      k.steerIn = steer;
       // off-track check
       k.idx = nearestIndex(k.x, k.z, k.idx);
       const c = SAMPLES[k.idx];
@@ -366,39 +412,30 @@ function ordinal(n) {
   return `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
 }
 
-function Kart({ k }) {
+function RaceKart({ k }) {
   const g = useRef();
-  const flame = useRef();
+  const src = useMemo(() => {
+    const o = { steer: 0, speed: 0, boosting: false };
+    return () => {
+      o.steer = k.steerIn || 0;
+      o.speed = k.speed;
+      o.boosting = k.boosting > 0;
+      return o;
+    };
+  }, [k]);
   useFrame(() => {
     if (!g.current) return;
     g.current.position.set(k.x, 0, k.z);
     g.current.rotation.y = k.h;
-    if (flame.current) flame.current.visible = k.boosting > 0;
+    // lean into turns
+    g.current.rotation.z = THREE.MathUtils.lerp(g.current.rotation.z, -(k.steerIn || 0) * Math.min(1, Math.abs(k.speed) / 8) * 0.08, 0.2);
   });
   return (
     <group ref={g}>
-      <mesh position={[0, 0.28, 0]} castShadow>
-        <boxGeometry args={[0.95, 0.32, 1.5]} />
-        <meshPhysicalMaterial color={k.p.color} clearcoat={1} roughness={0.25} />
-      </mesh>
-      <mesh position={[0, 0.3, 0.82]} castShadow>
-        <boxGeometry args={[1.05, 0.18, 0.2]} />
-        <meshStandardMaterial color="#1a1a1a" />
-      </mesh>
-      {[[-0.52, 0.5], [0.52, 0.5], [-0.52, -0.5], [0.52, -0.5]].map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.18, z]} rotation={[0, 0, Math.PI / 2]} castShadow>
-          <cylinderGeometry args={[0.18, 0.18, 0.16, 16]} />
-          <meshStandardMaterial color="#111" />
-        </mesh>
-      ))}
-      <mesh ref={flame} position={[0, 0.3, -0.95]} rotation={[-Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.18, 0.7, 12]} />
-        <meshBasicMaterial color="#ffd23a" toneMapped={false} />
-      </mesh>
-      <group position={[0, 0.3, -0.15]}>
+      <Kart color={k.p.color} source={src}>
         <Avatar player={k.p} anim={k.anim} scale={0.85} />
-      </group>
-      <mesh position={[0, 1.7, 0]} rotation={[Math.PI, 0, 0]}>
+      </Kart>
+      <mesh position={[0, 1.6, 0]} rotation={[Math.PI, 0, 0]}>
         <coneGeometry args={[0.09, 0.18, 4]} />
         <meshBasicMaterial color={k.p.color} toneMapped={false} />
       </mesh>
@@ -508,30 +545,13 @@ function Track() {
           </group>
         );
       })}
-      {/* trackside trees */}
-      {Array.from({ length: 70 }, (_, i) => {
-        const s = SAMPLES[(i * 17) % N_SAMPLES];
-        const n = NORMALS[(i * 17) % N_SAMPLES];
-        const side = i % 2 ? 1 : -1;
-        const off = HALF_W + 4 + (i % 4) * 1.6;
-        const x = s.x + n.x * side * off;
-        const z = s.z + n.z * side * off;
-        // skip trees that would land on another stretch of track
-        const ni = nearestGlobal(x, z);
-        if (Math.hypot(SAMPLES[ni].x - x, SAMPLES[ni].z - z) < HALF_W + 3) return null;
-        return (
-          <group key={i} position={[x, 0, z]}>
-            <mesh position={[0, 0.5, 0]} castShadow>
-              <cylinderGeometry args={[0.12, 0.15, 1, 8]} />
-              <meshStandardMaterial color="#6b3a1a" />
-            </mesh>
-            <mesh position={[0, 1.3, 0]} castShadow>
-              <sphereGeometry args={[0.7, 12, 10]} />
-              <meshStandardMaterial color={i % 3 ? '#3fae2a' : '#62d321'} />
-            </mesh>
-          </group>
-        );
-      })}
+      <Trees items={SCENERY.trees} />
+      <Bushes items={SCENERY.bushes} />
+      <Rocks items={SCENERY.rocks} />
+      <Tires items={SCENERY.tires} />
+      <Balloons items={SCENERY.balloons} />
+      <Banners items={SCENERY.banners} />
+      <Grandstand position={SCENERY.stand.position} rotation={SCENERY.stand.rotation} length={14} />
     </group>
   );
 }
@@ -626,7 +646,7 @@ function Scene({ game }) {
       <fog attach="fog" args={['#e0607a', 35, 120]} />
       <Track />
       {g.karts.map((k) => (
-        <Kart key={k.p.id} k={k} />
+        <RaceKart key={k.p.id} k={k} />
       ))}
     </>
   );

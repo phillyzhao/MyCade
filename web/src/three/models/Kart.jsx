@@ -178,23 +178,26 @@ function geos() {
     [0.125, -0.075], [0.165, -0.085], [0.187, -0.079], [0.198, -0.062], [0.2, -0.03],
     [0.2, 0.03], [0.198, 0.062], [0.187, 0.079], [0.165, 0.085], [0.125, 0.075],
   ].map(([x, y]) => new THREE.Vector2(x, y));
-  const tire = new THREE.LatheGeometry(tp, 30);
+  const tire = new THREE.LatheGeometry(tp, 26);
   tire.rotateZ(-Math.PI / 2);
 
   const rp = [[0.127, -0.07], [0.13, 0.05], [0.12, 0.072], [0.106, 0.064], [0.097, 0.045]].map(
     ([x, y]) => new THREE.Vector2(x, y),
   );
-  const rim = new THREE.LatheGeometry(rp, 22);
+  const rim = new THREE.LatheGeometry(rp, 18);
   rim.rotateZ(-Math.PI / 2);
   const rimFace = new THREE.CircleGeometry(0.098, 22);
   rimFace.rotateY(Math.PI / 2);
   rimFace.translate(0.045, 0, 0);
-  const hub = new THREE.SphereGeometry(0.04, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+  const rimBack = new THREE.CircleGeometry(0.128, 16);
+  rimBack.rotateY(-Math.PI / 2);
+  rimBack.translate(-0.06, 0, 0);
+  const hub = new THREE.SphereGeometry(0.04, 10, 4, 0, Math.PI * 2, 0, Math.PI / 2);
   hub.rotateZ(-Math.PI / 2);
   hub.translate(0.05, 0, 0);
 
-  const tube = (pts, r, seg = 20) =>
-    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p))), seg, r, 8, false);
+  const tube = (pts, r, seg = 16) =>
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p))), seg, r, 7, false);
   const frontBumper = tube(
     [[-0.34, 0.16, 0.6], [-0.3, 0.16, 0.74], [0, 0.17, 0.8], [0.3, 0.16, 0.74], [0.34, 0.16, 0.6]],
     0.045,
@@ -203,23 +206,30 @@ function geos() {
     [[-0.48, 0.2, -0.64], [-0.42, 0.2, -0.76], [0, 0.2, -0.79], [0.42, 0.2, -0.76], [0.48, 0.2, -0.64]],
     0.045,
   );
-  const capsuleEnd = new THREE.SphereGeometry(0.045, 8, 6);
+  const capsuleEnd = new THREE.SphereGeometry(0.046, 8, 5);
 
   const pipe = new THREE.CylinderGeometry(0.038, 0.032, 0.24, 12, 1, true);
   pipe.rotateX(Math.PI / 2);
-  const pipeLip = new THREE.TorusGeometry(0.04, 0.012, 6, 12);
+  const pipeLip = new THREE.TorusGeometry(0.04, 0.012, 4, 12);
   const pipeHole = new THREE.CircleGeometry(0.034, 12);
   pipeHole.rotateY(Math.PI);
 
-  const flameIn = new THREE.ConeGeometry(0.036, 0.3, 10, 1, true);
-  flameIn.translate(0, 0.15, 0);
-  flameIn.rotateX(-Math.PI / 2); // tip toward -Z
-  const flameOut = new THREE.ConeGeometry(0.07, 0.5, 10, 1, true);
-  flameOut.translate(0, 0.25, 0);
-  flameOut.rotateX(-Math.PI / 2);
+  // teardrop flames (lathe), tip toward -Z
+  const drop = (r, len) => {
+    const pts = [];
+    for (let i = 0; i <= 6; i++) {
+      const t = i / 6;
+      pts.push(new THREE.Vector2(Math.max(0.001, r * Math.sin(Math.PI * Math.pow(t, 0.55)) * (1 - t * 0.25)), -t * len));
+    }
+    const g = new THREE.LatheGeometry(pts, 8);
+    g.rotateX(Math.PI / 2);
+    return g;
+  };
+  const flameIn = drop(0.04, 0.24);
+  const flameOut = drop(0.075, 0.42);
 
   const column = new THREE.CylinderGeometry(0.018, 0.022, 0.26, 8);
-  const wheelRing = new THREE.TorusGeometry(0.1, 0.02, 8, 20);
+  const wheelRing = new THREE.TorusGeometry(0.1, 0.02, 6, 18);
   const wheelBar = rb(0.18, 0.03, 0.025, 0.012, 1);
   const wheelHub = new THREE.CylinderGeometry(0.035, 0.035, 0.03, 12);
   wheelHub.rotateX(Math.PI / 2);
@@ -227,9 +237,9 @@ function geos() {
   const axle = new THREE.CylinderGeometry(0.02, 0.02, WHEEL_X * 2, 6);
   axle.rotateZ(Math.PI / 2);
   const strut = new THREE.CylinderGeometry(0.016, 0.016, 0.2, 6);
-  const headlight = new THREE.SphereGeometry(0.045, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+  const headlight = new THREE.SphereGeometry(0.045, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2);
   headlight.rotateX(Math.PI / 2);
-  const bezel = new THREE.TorusGeometry(0.047, 0.01, 6, 14);
+  const bezel = new THREE.TorusGeometry(0.047, 0.01, 4, 12);
   const decal = new THREE.CircleGeometry(0.075, 20);
   const filter = new THREE.CylinderGeometry(0.05, 0.05, 0.07, 12);
   filter.rotateZ(Math.PI / 2);
@@ -240,6 +250,7 @@ function geos() {
     tire,
     rim,
     rimFace,
+    rimBack,
     hub,
     frontBumper,
     rearBumper,
@@ -259,14 +270,14 @@ function geos() {
     bezel,
     decal,
     filter,
-    floor: rb(0.62, 0.05, 1.3, 0.024),
+    floor: rb(0.62, 0.05, 1.3, 0.024, 1),
     pod: rb(0.17, 0.15, 0.5, 0.06),
     podIntake: rb(0.1, 0.06, 0.03, 0.015, 1),
-    stripe: rb(0.075, 0.012, 0.62, 0.005, 1),
-    seatBase: rb(0.36, 0.07, 0.3, 0.03),
+    stripe: new THREE.BoxGeometry(0.075, 0.012, 0.62),
+    seatBase: rb(0.36, 0.07, 0.3, 0.03, 1),
     seatBack: rb(0.38, 0.36, 0.08, 0.035),
-    engine: rb(0.32, 0.15, 0.2, 0.04),
-    wing: rb(0.88, 0.035, 0.2, 0.016),
+    engine: rb(0.32, 0.15, 0.2, 0.04, 1),
+    wing: rb(0.84, 0.035, 0.18, 0.016, 1),
     endplate: rb(0.03, 0.16, 0.24, 0.014, 1),
     dash: rb(0.3, 0.04, 0.08, 0.018, 1),
   };
@@ -293,10 +304,10 @@ function sharedMats() {
     head: new THREE.MeshStandardMaterial({ color: '#fff6d8', emissive: '#ffe9a8', emissiveIntensity: 1.6, toneMapped: false }),
     flameIn: new THREE.MeshBasicMaterial({ color: '#fff3a0', toneMapped: false, transparent: true, opacity: 0.95, depthWrite: false }),
     flameOut: new THREE.MeshBasicMaterial({
-      color: '#ff6a1f',
+      color: '#ff4a12',
       toneMapped: false,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.85,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide,
@@ -317,7 +328,7 @@ function colorMats(color, number) {
   c.getHSL(hsl);
   const deep = new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.05), hsl.l * 0.62);
   const m = {
-    body: new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08, sheen: 0.3, sheenColor: '#ffffff' }),
+    body: new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 }),
     deep: new THREE.MeshPhysicalMaterial({ color: deep, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 }),
     stripe: new THREE.MeshPhysicalMaterial({ color: stripeColor, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 }),
     number: new THREE.MeshPhysicalMaterial({
@@ -350,6 +361,7 @@ function Wheel({ position, side, rear, spinRef, steerRef, G, S, cm }) {
         <mesh geometry={G.tire} material={S.rubber} castShadow />
         <mesh geometry={G.rim} material={S.rim} />
         <mesh geometry={G.rimFace} material={S.rimFace} />
+        <mesh geometry={G.rimBack} material={S.dark} />
         <mesh geometry={G.hub} material={cm.body} />
       </group>
     </group>
@@ -361,7 +373,8 @@ function Wheel({ position, side, rear, spinRef, steerRef, G, S, cm }) {
   );
 }
 
-export function Kart({ color = '#ff2d2d', steer = 0, speed = 0, boosting = false, number, children }) {
+// source: optional () => ({steer, speed, boosting}) read every frame (avoids React re-renders in games)
+export function Kart({ color = '#ff2d2d', steer = 0, speed = 0, boosting = false, number, source, children }) {
   const G = geos();
   const S = sharedMats();
   const num = number ?? hashNumber(color);
@@ -384,7 +397,7 @@ export function Kart({ color = '#ff2d2d', steer = 0, speed = 0, boosting = false
 
   useFrame((state, dt) => {
     const d = Math.min(dt, 0.1);
-    const L = live.current;
+    const L = source ? source() : live.current;
     const s = st.current;
     s.angle += (L.speed || 0) * d;
     const fa = s.angle / FRONT_R;
@@ -501,12 +514,12 @@ export function Kart({ color = '#ff2d2d', steer = 0, speed = 0, boosting = false
       </group>
 
       {/* rear spoiler */}
-      <group position={[0, 0.56, -0.68]}>
+      <group position={[0, 0.49, -0.69]}>
         <mesh geometry={G.wing} material={cm.body} rotation={[-0.14, 0, 0]} castShadow />
-        <mesh geometry={G.endplate} material={S.dark} position={[0.45, -0.02, 0]} castShadow />
-        <mesh geometry={G.endplate} material={S.dark} position={[-0.45, -0.02, 0]} castShadow />
-        <mesh geometry={G.strut} material={S.dark} position={[0.2, -0.11, 0.06]} />
-        <mesh geometry={G.strut} material={S.dark} position={[-0.2, -0.11, 0.06]} />
+        <mesh geometry={G.endplate} material={S.dark} position={[0.43, -0.02, 0]} castShadow />
+        <mesh geometry={G.endplate} material={S.dark} position={[-0.43, -0.02, 0]} castShadow />
+        <mesh geometry={G.strut} material={S.dark} position={[0.2, -0.08, 0.05]} scale={[1, 0.7, 1]} />
+        <mesh geometry={G.strut} material={S.dark} position={[-0.2, -0.08, 0.05]} scale={[1, 0.7, 1]} />
       </group>
 
       {/* wheels */}

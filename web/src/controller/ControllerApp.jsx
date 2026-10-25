@@ -84,7 +84,6 @@ export default function ControllerApp({ room: initialRoom }) {
           case MSG.SCREEN: {
             const { type, to, ...s } = msg;
             setScreen((prev) => {
-              if (s.mode === MODE.RACE && prev.mode !== MODE.RACE) setTimeout(() => engine.zeroSteer(), 50);
               return s;
             });
             if (s.flash) {

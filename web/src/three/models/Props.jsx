@@ -102,8 +102,8 @@ function geo() {
   const flower = new THREE.IcosahedronGeometry(1, 0);
   const tire = new THREE.TorusGeometry(0.26, 0.12, 8, 18);
   tire.rotateX(Math.PI / 2);
-  const capsule = new THREE.CapsuleGeometry(0.12, 0.2, 3, 8);
-  const head = new THREE.SphereGeometry(0.1, 10, 8);
+  const capsule = new THREE.CapsuleGeometry(0.12, 0.2, 2, 7);
+  const head = new THREE.SphereGeometry(0.1, 9, 6);
   const pole = new THREE.CylinderGeometry(0.035, 0.045, 1, 8);
   pole.translate(0, 0.5, 0);
   const finial = new THREE.SphereGeometry(0.07, 10, 8);
@@ -228,7 +228,7 @@ export function Bushes({ items = [] }) {
   }, [items]);
   return (
     <group>
-      <Instances geometry={g.blob} material={m.foliage} list={blobs} />
+      <Instances geometry={g.blobLo} material={m.foliage} list={blobs} />
       <Instances geometry={g.flower} material={m.flower} list={flowers} castShadow={false} />
     </group>
   );

@@ -7,6 +7,7 @@ import { MODE } from '@shared/protocol.js';
 import { Avatar, makeAnim } from '../../three/Avatar.jsx';
 import { SkyDome, Lights, Clouds, Bubbles } from '../../three/Scenery.jsx';
 import { StudioEnv, Post } from '../../three/Stage.jsx';
+import { BowlingAlley } from '../../three/models/Venues.jsx';
 import { getInput, onPlayerEvent } from '../../host/input.js';
 import { sendScreen, sendHaptic } from '../../host/net.js';
 import { popup, confetti } from '../../ui/fx.jsx';
@@ -263,9 +264,7 @@ function Scene({ game }) {
       <StudioEnv />
       <Post />
       <Lights shadowSize={10} target={[0, 0, -6]} />
-      <Clouds count={14} y={-6} spread={60} z={-20} />
-      <Clouds count={8} y={10} spread={60} z={-40} />
-      <Bubbles count={16} area={[14, 6, 30]} center={[0, 0.5, -8]} />
+      <BowlingAlley laneWidth={LANE_W} headZ={HEAD_Z} />
       {/* floating lane platform */}
       <group>
         <mesh position={[0, -0.002, -(Math.abs(HEAD_Z) + 4) / 2 + 3]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -303,10 +302,7 @@ function Scene({ game }) {
           <boxGeometry args={[1.8, 0.5, 2.8]} />
           <meshPhysicalMaterial color="#d4141b" clearcoat={1} roughness={0.15} />
         </mesh>
-        <mesh position={[0, 0.25, HEAD_Z - 3.25]}>
-          <boxGeometry args={[1.8, 1.4, 0.1]} />
-          <meshStandardMaterial color="#0d3559" />
-        </mesh>
+
       </group>
       {g.pins.map((_, i) => (
         <mesh key={i} ref={(el) => (pinRefs.current[i] = el)} geometry={pinGeo} material={pinMat} castShadow />

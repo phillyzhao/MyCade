@@ -8,6 +8,7 @@ import { useFrame, useLoader } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { ToyBody } from './models/ToyBody.jsx';
 
 const SKIN = '#f5c9a5';
 const HAIR = ['#3b2414', '#1d1a1a', '#7a4a22', '#e3b04b', '#5b3a29', '#2b2b38', '#a8552a', '#3a2a1a'];
@@ -135,21 +136,8 @@ function poseAngles(anim, time) {
   return a;
 }
 
-function DefaultBody({ color, slot = 0, anim, held }) {
+function DefaultBody({ color, slot = 0, anim, held, look }) {
   const r = useRef({});
-  const mats = useMemo(
-    () => ({
-      shirt: glossy(color),
-      skin: glossy(SKIN, { clearcoat: 0.3, roughness: 0.55 }),
-      hair: glossy(HAIR[slot % HAIR.length], { roughness: 0.5 }),
-      pants: glossy(new THREE.Color(color).multiplyScalar(0.45).getStyle()),
-      eye: new THREE.MeshBasicMaterial({ color: '#1c1410' }),
-      cheek: new THREE.MeshBasicMaterial({ color: '#ff8c9a', transparent: true, opacity: 0.55 }),
-      shoe: glossy('#ffffff'),
-    }),
-    [color, slot],
-  );
-
   useFrame((_, dt) => {
     if (!anim) return;
     anim.time = (anim.time || 0) + dt;
@@ -174,75 +162,7 @@ function DefaultBody({ color, slot = 0, anim, held }) {
   });
 
   const set = (name) => (el) => (r.current[name] = el);
-  return (
-    <group>
-      {/* legs (pivot at hips) */}
-      <group ref={set('lLeg')} position={[-0.07, 0.24, 0]}>
-        <mesh material={mats.pants} position={[0, -0.09, 0]} castShadow>
-          <capsuleGeometry args={[0.055, 0.1, 6, 12]} />
-        </mesh>
-        <mesh material={mats.shoe} position={[0, -0.2, 0.025]} castShadow scale={[1, 0.7, 1.3]}>
-          <sphereGeometry args={[0.06, 16, 12]} />
-        </mesh>
-      </group>
-      <group ref={set('rLeg')} position={[0.07, 0.24, 0]}>
-        <mesh material={mats.pants} position={[0, -0.09, 0]} castShadow>
-          <capsuleGeometry args={[0.055, 0.1, 6, 12]} />
-        </mesh>
-        <mesh material={mats.shoe} position={[0, -0.2, 0.025]} castShadow scale={[1, 0.7, 1.3]}>
-          <sphereGeometry args={[0.06, 16, 12]} />
-        </mesh>
-      </group>
-      <group ref={set('body')} position={[0, 0.3, 0]}>
-        {/* torso */}
-        <mesh material={mats.shirt} position={[0, 0.12, 0]} castShadow>
-          <capsuleGeometry args={[0.13, 0.12, 8, 16]} />
-        </mesh>
-        {/* arms (pivot at shoulders); rotation.z lowers/raises, rotation.x swings fore/aft */}
-        <group ref={set('lArm')} position={[0.14, 0.22, 0]} rotation={[0, 0, 0.3]}>
-          <mesh material={mats.shirt} position={[0, -0.09, 0]} castShadow>
-            <capsuleGeometry args={[0.045, 0.1, 6, 10]} />
-          </mesh>
-          <mesh material={mats.skin} position={[0, -0.19, 0]} castShadow>
-            <sphereGeometry args={[0.058, 16, 12]} />
-          </mesh>
-        </group>
-        <group ref={set('rArm')} position={[-0.14, 0.22, 0]} rotation={[0, 0, -0.3]}>
-          <mesh material={mats.shirt} position={[0, -0.09, 0]} castShadow>
-            <capsuleGeometry args={[0.045, 0.1, 6, 10]} />
-          </mesh>
-          <mesh material={mats.skin} position={[0, -0.19, 0]} castShadow>
-            <sphereGeometry args={[0.058, 16, 12]} />
-          </mesh>
-          {held && <group position={[0, -0.22, 0]}>{held}</group>}
-        </group>
-        {/* head (pivot at neck) */}
-        <group ref={set('head')} position={[0, 0.27, 0]}>
-          <mesh material={mats.skin} position={[0, 0.2, 0]} castShadow>
-            <sphereGeometry args={[0.215, 32, 24]} />
-          </mesh>
-          <mesh material={mats.hair} position={[0, 0.27, -0.02]} scale={[1.04, 0.78, 1.04]}>
-            <sphereGeometry args={[0.215, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
-          </mesh>
-          <mesh material={mats.eye} position={[-0.07, 0.2, 0.195]} scale={[0.7, 1.15, 0.5]}>
-            <sphereGeometry args={[0.03, 12, 10]} />
-          </mesh>
-          <mesh material={mats.eye} position={[0.07, 0.2, 0.195]} scale={[0.7, 1.15, 0.5]}>
-            <sphereGeometry args={[0.03, 12, 10]} />
-          </mesh>
-          <mesh material={mats.cheek} position={[-0.12, 0.13, 0.17]} rotation={[0, -0.5, 0]}>
-            <circleGeometry args={[0.035, 16]} />
-          </mesh>
-          <mesh material={mats.cheek} position={[0.12, 0.13, 0.17]} rotation={[0, 0.5, 0]}>
-            <circleGeometry args={[0.035, 16]} />
-          </mesh>
-          <mesh material={mats.eye} position={[0, 0.11, 0.205]} rotation={[0, 0, Math.PI]}>
-            <torusGeometry args={[0.035, 0.008, 6, 16, Math.PI]} />
-          </mesh>
-        </group>
-      </group>
-    </group>
-  );
+  return <ToyBody color={color} slot={slot} setRef={set} held={held} look={look} />;
 }
 
 // ---- image card avatar: knock out the white background, show on a billboard
@@ -347,7 +267,7 @@ const _q2 = new THREE.Quaternion();
 const _ax = new THREE.Vector3();
 const AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
 
-function GlbBody({ url, meta, anim }) {
+function GlbBody({ url, meta, anim, held }) {
   const gltf = useGLTF(url);
   const { scene, bones, rest } = useMemo(() => {
     const scene = cloneSkinned(gltf.scene);
@@ -385,10 +305,13 @@ function GlbBody({ url, meta, anim }) {
         rest[canon] = b.quaternion.clone();
       }
     }
+    if (typeof window !== 'undefined') (window.__glbs ||= []).push({ bones, scene: inner, meta });
     return { scene: inner, bones, rest };
-  }, [gltf, meta]);
+    // memo on content, not object identity (player objects are recreated on every update)
+  }, [gltf, meta?.yaw, meta?.height, meta?.minY, JSON.stringify(meta?.bones || {})]);
 
   const root = useRef();
+  const prop = useRef();
   useFrame((_, dt) => {
     if (!anim) return;
     anim.time = (anim.time || 0) + dt;
@@ -416,34 +339,69 @@ function GlbBody({ url, meta, anim }) {
     drive('leftUpperLeg', AX.x, a.lLegX);
     drive('rightUpperLeg', AX.x, a.rLegX);
     drive('head', AX.x, a.headTilt);
+
+    // held prop (racket): follow the right hand, pointing along the forearm
+    const hand = bones.rightHand || bones.rightLowerArm;
+    const elbow = bones.rightLowerArm || bones.rightUpperArm;
+    if (prop.current && hand && elbow && root.current?.parent) {
+      const par = root.current.parent;
+      hand.getWorldPosition(_hp);
+      elbow.getWorldPosition(_ep);
+      _dir.subVectors(_hp, _ep).normalize();
+      par.worldToLocal(_hp);
+      prop.current.position.copy(_hp);
+      // direction into the parent's space
+      par.getWorldQuaternion(_pq2).invert();
+      _dir.applyQuaternion(_pq2);
+      prop.current.quaternion.setFromUnitVectors(_down, _dir);
+      prop.current.visible = true;
+    }
   });
 
   return (
-    <group ref={root}>
-      <primitive object={scene} />
-    </group>
+    <>
+      <group ref={root}>
+        <primitive object={scene} />
+      </group>
+      {held && (
+        <group ref={prop} visible={false}>
+          {held}
+        </group>
+      )}
+    </>
   );
 }
+const _hp = new THREE.Vector3();
+const _ep = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _down = new THREE.Vector3(0, -1, 0);
+const _pq2 = new THREE.Quaternion();
 
 export function Avatar({ player, anim, held, scale = 1, ...rest }) {
   const color = player?.color || '#19b8ff';
   const av = player?.avatar;
-  const fallback = <DefaultBody color={color} slot={player?.slot || 0} anim={anim} held={held} />;
+  const fallback = <DefaultBody color={color} slot={player?.slot || 0} anim={anim} held={held} look={player?.look} />;
   let body = fallback;
   if (av?.glb && av?.rigged !== false) {
     body = (
       <Suspense fallback={fallback}>
-        <GlbBody url={av.glb} meta={av} anim={anim} />
+        <GlbBody url={av.glb} meta={av} anim={anim} held={held} />
       </Suspense>
     );
   } else if (av?.glb) {
     body = (
       <Suspense fallback={fallback}>
         <GlbBody url={av.glb} meta={{ ...av, bones: {} }} anim={anim} />
+        {held && <group position={[-0.28, 0.5, 0.08]}>{held}</group>}
       </Suspense>
     );
   } else if (av?.image) {
-    body = <CardBody url={av.image} anim={anim} fallback={fallback} />;
+    body = (
+      <>
+        <CardBody url={av.image} anim={anim} fallback={fallback} />
+        {held && <group position={[-0.32, 0.5, 0.08]}>{held}</group>}
+      </>
+    );
   }
   return (
     <group scale={scale} {...rest}>

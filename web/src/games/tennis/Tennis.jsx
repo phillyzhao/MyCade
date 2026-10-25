@@ -7,6 +7,7 @@ import { MODE } from '@shared/protocol.js';
 import { Avatar, makeAnim } from '../../three/Avatar.jsx';
 import { SkyDome, Lights } from '../../three/Scenery.jsx';
 import { StudioEnv, Post } from '../../three/Stage.jsx';
+import { TennisStadium } from '../../three/models/Venues.jsx';
 import { onPlayerEvent } from '../../host/input.js';
 import { sendScreen, sendHaptic } from '../../host/net.js';
 import { popup } from '../../ui/fx.jsx';
@@ -443,10 +444,7 @@ function Court() {
   }, []);
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#1d5a2a" />
-      </mesh>
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[HALF_W * 2 + 2, HALF_L * 2 + 3]} />
         <meshPhysicalMaterial color="#2f5bd8" roughness={0.6} clearcoat={0.3} />
@@ -473,19 +471,6 @@ function Court() {
         <mesh key={s} position={[s * (HALF_W + 0.55), NET_H / 2, 0]}>
           <cylinderGeometry args={[0.05, 0.05, NET_H + 0.1, 8]} />
           <meshStandardMaterial color="#ffd23a" />
-        </mesh>
-      ))}
-      {/* neon stands */}
-      {[-1, 1].map((s) => (
-        <mesh key={`st${s}`} position={[s * (HALF_W + 3.5), 0.6, 0]}>
-          <boxGeometry args={[1.2, 1.2, HALF_L * 2 + 2]} />
-          <meshStandardMaterial color="#1e1518" />
-        </mesh>
-      ))}
-      {[-1, 1].map((s) => (
-        <mesh key={`ne${s}`} position={[s * (HALF_W + 2.88), 1.21, 0]}>
-          <boxGeometry args={[0.06, 0.06, HALF_L * 2 + 2]} />
-          <meshBasicMaterial color={s < 0 ? '#ff2d2d' : '#9dff3a'} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -536,6 +521,7 @@ function Scene({ game }) {
       <StudioEnv />
       <Post />
       <Lights shadowSize={14} />
+      <TennisStadium halfW={HALF_W} halfL={HALF_L} />
       <Court />
       {g.ents.map((e, i) => (
         <group key={e.p.id} ref={(el) => (entRefs.current[i] = el)}>

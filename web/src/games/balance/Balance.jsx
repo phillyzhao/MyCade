@@ -8,6 +8,7 @@ import { MODE } from '@shared/protocol.js';
 import { Avatar, makeAnim } from '../../three/Avatar.jsx';
 import { SkyDome, Lights, Clouds } from '../../three/Scenery.jsx';
 import { StudioEnv, Post } from '../../three/Stage.jsx';
+import { PartyPark } from '../../three/models/Venues.jsx';
 import { getInput } from '../../host/input.js';
 import { sendScreen, sendHaptic } from '../../host/net.js';
 import { popup } from '../../ui/fx.jsx';
@@ -229,6 +230,7 @@ function Scene({ game }) {
       <StudioEnv />
       <Post />
       <Lights shadowSize={12} />
+      <PartyPark />
       <Clouds count={10} y={-14} spread={50} z={-20} />
       <Clouds count={8} y={8} spread={60} z={-35} />
       {g.state.map((s, i) => (

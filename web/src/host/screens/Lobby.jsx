@@ -75,6 +75,9 @@ export default function Lobby() {
             </span>
           </div>
         </div>
+      </section>
+
+      <aside className="join-col">
         <div className="join-card bounce-in">
           <div className="qr-wrap">{qr ? <img src={qr} alt="Join QR code" /> : <div className="qr-ph" />}</div>
           <div className="join-code">
@@ -85,7 +88,7 @@ export default function Lobby() {
             {joinUrl.replace(/^https?:\/\//, '') || 'connecting…'}
           </button>
         </div>
-      </section>
+      </aside>
 
       <section className="lobby-players">
         {Array.from({ length: Math.max(4, act.length) }, (_, i) => act[i]).map((p, i) =>
