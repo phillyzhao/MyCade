@@ -7,6 +7,8 @@
 - **Latency:** about 10 s from upload to the image appearing on the big screen and on the player's phone.
 - **Privacy:** the original photo is held in memory only. It is downscaled and never written to disk.
 
+- **Gemini 3 Flash (`gemini-3-flash-preview`):** the AI commentator, in `server/commentary.js`. After every match it writes one cheeky line from the actual standings and highlights (for example, "Omar hit thirty-one miles per hour just to beat Mark, who apparently thought we were playing golf"). The line is shown on the results screen.
+
 ## Tripo (image to 3D and auto-rig)
 - **Where:** `server/avatar/pipeline.js`. It uses the Tripo v3 OpenAPI: `image_to_model`, then the rig check, then `animate_rig` on the biped template, with GLB output.
 - **What it does:** turns the Gemini character image into a textured, rigged 3D Buddy.

@@ -52,6 +52,13 @@ export default function Menu() {
   const players = useHost((s) => s.players);
   const matches = useHost((s) => s.matches);
   const [focus, setFocus] = useState(0);
+  const [history, setHistory] = useState([]);
+  useEffect(() => {
+    fetch('/api/matches')
+      .then((r) => r.json())
+      .then((m) => Array.isArray(m) && setHistory(m))
+      .catch(() => {});
+  }, []);
   const focusRef = useRef(0);
   focusRef.current = focus;
   const act = activePlayers(players);
@@ -84,6 +91,11 @@ export default function Menu() {
 
   const board = leaderboard(matches, act);
   const h2h = headToHead(matches).slice(0, 3);
+  // all-time rivalries between the people in the room, from the server's match history
+  const names = new Set(act.filter((p) => !p.cpu).map((p) => p.name));
+  const allTime = headToHead(history.filter((m) => m.standings?.filter((s) => names.has(s.name)).length >= 2).map((m) => ({ ...m, standings: m.standings.filter((s) => names.has(s.name)) })))
+    .filter((r) => r.lw + r.tw > 0)
+    .slice(0, 3);
 
   return (
     <div className="menu fade-in">
@@ -135,6 +147,16 @@ export default function Menu() {
             <h4>Rivalries</h4>
             {h2h.map((r) => (
               <div key={r.leader + r.trailer} className="rival">
+                {rivalryLine(r)}
+              </div>
+            ))}
+          </>
+        )}
+        {allTime.length > 0 && (
+          <>
+            <h4>All-time</h4>
+            {allTime.map((r) => (
+              <div key={'at' + r.leader + r.trailer} className="rival">
                 {rivalryLine(r)}
               </div>
             ))}

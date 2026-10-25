@@ -217,9 +217,11 @@ function Scene({ game }) {
   const n = g.state.length;
   useFrame((_, dt) => {
     g.update(Math.min(dt, 1 / 20));
+    // up close: low, slightly above the islands, gentle drift so it feels alive
     const span = Math.max(1, n) * SPACING;
-    camera.position.lerp(new THREE.Vector3(0, 2.4 + span * 0.28, 3.2 + span * 0.62), 0.05);
-    camera.lookAt(0, 0, 0);
+    const tt = performance.now() / 1000;
+    camera.position.lerp(new THREE.Vector3(Math.sin(tt * 0.25) * 0.6, 1.5 + span * 0.16, 2.2 + span * 0.5), 0.05);
+    camera.lookAt(0, 0.35, 0);
   });
   return (
     <>
@@ -261,7 +263,7 @@ export default function Balance({ players, playing, onDone }) {
   const left = Math.max(0, DURATION - g.t);
   return (
     <>
-      <Canvas shadows="soft" dpr={[1, 2]} camera={{ position: [0, 5, 9], fov: 45 }}>
+      <Canvas shadows="soft" dpr={[1, 2]} camera={{ position: [0, 3, 7.6], fov: 50 }}>
         <Scene game={game} />
       </Canvas>
       <div className="hud">

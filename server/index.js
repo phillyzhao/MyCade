@@ -10,6 +10,7 @@ import { WebSocketServer } from 'ws';
 import { attach, getRoom, listRooms, setPlayerAvatar } from './rooms.js';
 import { createStats } from './stats.js';
 import { createAvatarService } from './avatar/index.js';
+import { commentate } from './commentary.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -112,6 +113,14 @@ async function onRequest(req, res) {
     if (p === '/api/matches' && req.method === 'POST') {
       const body = JSON.parse((await readBody(req)).toString());
       return json(res, 200, stats.addMatch(body));
+    }
+    if (p === '/api/commentary' && req.method === 'POST') {
+      const body = JSON.parse((await readBody(req)).toString());
+      try {
+        return json(res, 200, { line: await commentate(body) });
+      } catch (e) {
+        return json(res, 200, { line: null, error: e.message });
+      }
     }
     if (p === '/api/motion' && req.method === 'POST') {
       const body = JSON.parse((await readBody(req)).toString());

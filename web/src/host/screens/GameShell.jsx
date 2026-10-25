@@ -43,6 +43,7 @@ export default function GameShell() {
   const [phase, setPhase] = useState('intro'); // intro | countdown | play | results
   const [count, setCount] = useState(3);
   const [result, setResult] = useState(null);
+  const [commentary, setCommentary] = useState(null);
   const [roster] = useState(() => activePlayers(useHost.getState().players));
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
@@ -109,6 +110,14 @@ export default function GameShell() {
       fetch('/api/matches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(match) }).catch(() => {});
       setResult(match);
       setPhase('results');
+      fetch('/api/commentary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game: gameId, standings: ranked.map((s) => ({ ...s, cpu: roster.find((r) => r.id === s.pid)?.cpu })), highlights: res.highlights || [] }),
+      })
+        .then((r) => r.json())
+        .then((d) => d.line && setCommentary(d.line))
+        .catch(() => {});
       sound.music('results');
       sound.sting('victory');
       confetti({ count: 220 });
@@ -187,6 +196,12 @@ export default function GameShell() {
                 </li>
               ))}
             </ol>
+            {commentary && (
+              <div className="commentary">
+                <span className="pixel">COMMENTATOR</span>
+                {commentary}
+              </div>
+            )}
             {result.highlights?.length > 0 && (
               <div className="highlights">
                 {result.highlights.map((h) => (
