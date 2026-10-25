@@ -3,7 +3,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function SkyDome({ top = '#1688e6', mid = '#7fd0ff', bottom = '#f2fbff', radius = 120 }) {
+export function SkyDome({ top = '#0b0414', mid = '#3c0f3a', bottom = '#16060f', radius = 120 }) {
   const mat = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -13,8 +13,9 @@ export function SkyDome({ top = '#1688e6', mid = '#7fd0ff', bottom = '#f2fbff', 
         vertexShader: 'varying vec3 vp; void main(){ vp = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
         fragmentShader: `uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; varying vec3 vp;
           void main(){ float h = vp.y; vec3 c = h > 0.0 ? mix(mid, top, smoothstep(0.0, 0.6, h)) : mix(mid, bottom, smoothstep(0.0, -0.25, h));
-          float sun = pow(max(0.0, dot(vp, normalize(vec3(0.5, 0.45, -0.7)))), 64.0);
-          gl_FragColor = vec4(c + vec3(1.0,0.97,0.9)*sun*0.8, 1.0); }`,
+          float sun = pow(max(0.0, dot(vp, normalize(vec3(0.3, 0.12, -0.95)))), 24.0);
+          float stars = step(0.9985, fract(sin(dot(floor(vp.xz*420.0 + vp.y*137.0), vec2(12.9898,78.233)))*43758.5453)) * smoothstep(0.15, 0.5, h);
+          gl_FragColor = vec4(c + vec3(1.0,0.8,0.4)*sun*0.9 + vec3(stars), 1.0); }`,
       }),
     [top, mid, bottom],
   );
@@ -28,7 +29,7 @@ export function SkyDome({ top = '#1688e6', mid = '#7fd0ff', bottom = '#f2fbff', 
 export function Lights({ shadowSize = 12, target = [0, 0, 0] }) {
   return (
     <>
-      <hemisphereLight args={['#dff4ff', '#7bcf4a', 0.9]} />
+      <hemisphereLight args={['#ffd9e8', '#3a1450', 1.1]} />
       <directionalLight
         position={[6, 10, 6]}
         intensity={2.1}
@@ -66,7 +67,7 @@ function Cloud({ position, scale = 1, speed = 0.3 }) {
       {puffs.map((pf, i) => (
         <mesh key={i} position={pf.p}>
           <sphereGeometry args={[pf.r, 16, 12]} />
-          <meshStandardMaterial color="#ffffff" roughness={1} emissive="#cfeaff" emissiveIntensity={0.35} />
+          <meshStandardMaterial color="#ff9ab0" roughness={1} emissive="#ff4d6d" emissiveIntensity={0.25} transparent opacity={0.85} />
         </mesh>
       ))}
     </group>

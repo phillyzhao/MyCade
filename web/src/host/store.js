@@ -41,3 +41,6 @@ export const useHost = create((set, get) => ({
 }));
 
 export const activePlayers = (players) => players.filter((p) => p.connected || p.cpu).slice(0, 8);
+
+// handy for live debugging in the browser console
+if (typeof window !== 'undefined') window.__host = useHost;

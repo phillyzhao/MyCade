@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
+import { useGLTF } from '@react-three/drei';
 import { MODE } from '@shared/protocol.js';
 import { useHost, activePlayers } from './store.js';
 import { startHostNet, sendScreen } from './net.js';
 import { installKeyboard, onPlayerEvent } from './input.js';
-import { AeroBackground, PopupLayer, ConfettiLayer } from '../ui/fx.jsx';
+import { ArcadeBackground, PopupLayer, ConfettiLayer } from '../ui/fx.jsx';
 import { sound } from '../sound.js';
 import { BRAND } from '../brand.js';
 import Lobby from './screens/Lobby.jsx';
@@ -59,6 +60,11 @@ export default function HostApp() {
     };
   }, []);
 
+  // warm the GLB cache as soon as a Buddy is ready, so games never stall loading it
+  useEffect(() => {
+    for (const p of players) if (p.avatar?.glb) useGLTF.preload(p.avatar.glb);
+  }, [players]);
+
   // keep phones in the right mode for non-game screens
   useEffect(() => {
     if (screen === 'lobby') sendScreen('all', { mode: MODE.LOBBY, prompt: 'You are in! Watch the big screen.' });
@@ -68,7 +74,7 @@ export default function HostApp() {
 
   return (
     <div id="stage" className="host">
-      <AeroBackground />
+      <ArcadeBackground />
       <header className="topbar">
         <div className="brand">
           <span className="brand-orb" />

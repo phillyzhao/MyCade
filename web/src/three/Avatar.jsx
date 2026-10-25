@@ -23,7 +23,7 @@ const ease = (x) => x * x * (3 - 2 * x);
 /** Compute joint angles for a pose. Returns radians for each joint. */
 function poseAngles(anim, time) {
   const t = anim.t ?? 0;
-  const a = { bodyY: 0, bodyLean: 0, bodyTwist: 0, headTilt: 0, lArmZ: 1.2, rArmZ: -1.2, lArmX: 0, rArmX: 0, lLegX: 0, rLegX: 0, hop: 0, squash: 1 };
+  const a = { bodyY: 0, bodyLean: 0, bodyTwist: 0, headTilt: 0, lArmZ: 0.3, rArmZ: -0.3, lArmX: 0, rArmX: 0, lLegX: 0, rLegX: 0, hop: 0, squash: 1 };
   const breathe = Math.sin(time * 2.2) * 0.02;
   switch (anim.pose) {
     case 'run': {
@@ -127,8 +127,8 @@ function poseAngles(anim, time) {
       break;
     }
     default: {
-      a.lArmZ = 1.2 + breathe * 2;
-      a.rArmZ = -1.2 - breathe * 2;
+      a.lArmZ = 0.3 + breathe * 2;
+      a.rArmZ = -0.3 - breathe * 2;
       a.hop = breathe * 0.3;
     }
   }
@@ -199,7 +199,7 @@ function DefaultBody({ color, slot = 0, anim, held }) {
           <capsuleGeometry args={[0.13, 0.12, 8, 16]} />
         </mesh>
         {/* arms (pivot at shoulders); rotation.z lowers/raises, rotation.x swings fore/aft */}
-        <group ref={set('lArm')} position={[-0.14, 0.22, 0]} rotation={[0, 0, 1.2]}>
+        <group ref={set('lArm')} position={[0.14, 0.22, 0]} rotation={[0, 0, 0.3]}>
           <mesh material={mats.shirt} position={[0, -0.09, 0]} castShadow>
             <capsuleGeometry args={[0.045, 0.1, 6, 10]} />
           </mesh>
@@ -207,7 +207,7 @@ function DefaultBody({ color, slot = 0, anim, held }) {
             <sphereGeometry args={[0.058, 16, 12]} />
           </mesh>
         </group>
-        <group ref={set('rArm')} position={[0.14, 0.22, 0]} rotation={[0, 0, -1.2]}>
+        <group ref={set('rArm')} position={[-0.14, 0.22, 0]} rotation={[0, 0, -0.3]}>
           <mesh material={mats.shirt} position={[0, -0.09, 0]} castShadow>
             <capsuleGeometry args={[0.045, 0.1, 6, 10]} />
           </mesh>
@@ -342,6 +342,9 @@ function CardBody({ url, anim, fallback }) {
 // ---- rigged GLB avatar
 const _q = new THREE.Quaternion();
 const _pq = new THREE.Quaternion();
+const _rq = new THREE.Quaternion();
+const _q2 = new THREE.Quaternion();
+const _ax = new THREE.Vector3();
 const AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
 
 function GlbBody({ url, meta, anim }) {
@@ -349,13 +352,23 @@ function GlbBody({ url, meta, anim }) {
   const { scene, bones, rest } = useMemo(() => {
     const scene = cloneSkinned(gltf.scene);
     scene.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(scene);
-    const size = box.getSize(new THREE.Vector3());
-    const s = 1 / (size.y || 1);
-    scene.scale.setScalar(s);
-    const c = box.getCenter(new THREE.Vector3());
-    scene.position.set(-c.x * s, -box.min.y * s, -c.z * s);
-    if (meta?.facing === '-z') scene.rotation.y = Math.PI;
+    const inner = new THREE.Group();
+    inner.add(scene);
+    if (meta?.height > 0) {
+      // server measured the skinned rest pose: scale to height 1.0, feet at y=0
+      const s = 1 / meta.height;
+      scene.scale.setScalar(s);
+      scene.position.y = -(meta.minY || 0) * s;
+    } else {
+      const box = new THREE.Box3().setFromObject(scene, true);
+      const size = box.getSize(new THREE.Vector3());
+      const s = 1 / (size.y || 1);
+      scene.scale.setScalar(s);
+      const c = box.getCenter(new THREE.Vector3());
+      scene.position.set(-c.x * s, -box.min.y * s, -c.z * s);
+    }
+    // Tripo rigs face +X; yaw turns them to face +Z like every other avatar
+    inner.rotation.y = meta?.yaw || 0;
     scene.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = true;
@@ -366,13 +379,13 @@ function GlbBody({ url, meta, anim }) {
     const rest = {};
     const map = meta?.bones || {};
     for (const [canon, name] of Object.entries(map)) {
-      const b = scene.getObjectByName(name) || scene.getObjectByName(String(name).replace(/[:.]/g, ''));
+      const b = scene.getObjectByName(THREE.PropertyBinding.sanitizeNodeName(name)) || scene.getObjectByName(name);
       if (b) {
         bones[canon] = b;
         rest[canon] = b.quaternion.clone();
       }
     }
-    return { scene, bones, rest };
+    return { scene: inner, bones, rest };
   }, [gltf, meta]);
 
   const root = useRef();
@@ -386,18 +399,20 @@ function GlbBody({ url, meta, anim }) {
       root.current.rotation.y = a.bodyTwist * 0.8;
     }
     // drive arms from T-pose rest with world-space rotations (rig-agnostic)
-    const drive = (canon, axis, angle) => {
+    root.current?.getWorldQuaternion(_rq);
+    const drive = (canon, axis, angle, axis2, angle2) => {
       const b = bones[canon];
       if (!b || !b.parent) return;
       b.parent.getWorldQuaternion(_pq);
-      _q.setFromAxisAngle(axis, angle);
+      _q.setFromAxisAngle(_ax.copy(axis).applyQuaternion(_rq), angle);
+      if (axis2) _q.premultiply(_q2.setFromAxisAngle(_ax.copy(axis2).applyQuaternion(_rq), angle2));
       // local = parentWorld^-1 * worldRot * parentWorld * rest
       const local = _pq.clone().invert().multiply(_q).multiply(_pq).multiply(rest[canon]);
       b.quaternion.slerp(local, Math.min(1, dt * 14));
     };
     // T-pose arms are horizontal (angle PI/2 from down); our pose angles measure from down
-    drive('leftUpperArm', AX.z, -(Math.PI / 2 - a.lArmZ));
-    drive('rightUpperArm', AX.z, Math.PI / 2 + a.rArmZ);
+    drive('leftUpperArm', AX.z, a.lArmZ - Math.PI / 2, AX.x, a.lArmX);
+    drive('rightUpperArm', AX.z, Math.PI / 2 + a.rArmZ, AX.x, a.rArmX);
     drive('leftUpperLeg', AX.x, a.lLegX);
     drive('rightUpperLeg', AX.x, a.rLegX);
     drive('head', AX.x, a.headTilt);

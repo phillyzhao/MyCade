@@ -140,8 +140,10 @@ export default function GameShell() {
       {phase === 'intro' && (
         <div className="overlay">
           <div className="intro-card glass bounce-in" style={{ '--tc': meta?.color }}>
-            <div className="intro-tag">{meta?.tag}</div>
-            <h1 className="display-title intro-title">{meta?.title}</h1>
+            <div className="intro-head burst">
+              <div className="intro-tag">{meta?.tag}</div>
+              <h1 className="display-title intro-title">{meta?.title?.toUpperCase()}!</h1>
+            </div>
             <div className="intro-body">
               <MotionLoop kind={how.motion} />
               <ol className="howto">
@@ -173,7 +175,7 @@ export default function GameShell() {
       {phase === 'results' && result && (
         <div className="overlay">
           <div className="results-card glass bounce-in">
-            <h2 className="display-title results-title">Results</h2>
+            <h2 className="display-title results-title">RESULTS!</h2>
             <ol className="results-list">
               {result.standings.map((s, i) => (
                 <li key={s.pid} className={`rrow r${s.rank}`} style={{ '--pc': s.color, animationDelay: `${0.15 + i * 0.12}s` }}>

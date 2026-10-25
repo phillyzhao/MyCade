@@ -1,35 +1,11 @@
 // Shared visual effects: sky backdrop, bouncy popups, confetti, screen shake.
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 
-export function AeroBackground({ bubbles = 14, clouds = 5 }) {
-  const items = useMemo(
-    () => ({
-      clouds: Array.from({ length: clouds }, (_, i) => ({
-        top: 6 + ((i * 17) % 45),
-        w: 120 + ((i * 53) % 140),
-        dur: 70 + ((i * 23) % 60),
-        delay: -((i * 31) % 90),
-      })),
-      bubbles: Array.from({ length: bubbles }, (_, i) => ({
-        left: (i * 37) % 100,
-        size: 14 + ((i * 29) % 46),
-        dur: 14 + ((i * 7) % 16),
-        delay: -((i * 13) % 30),
-      })),
-    }),
-    [bubbles, clouds],
-  );
+export function ArcadeBackground() {
   return (
-    <div className="aero-bg" aria-hidden>
-      <div className="flare" />
-      {items.clouds.map((c, i) => (
-        <div key={i} className="cloud" style={{ top: `${c.top}%`, width: c.w, height: c.w * 0.32, animationDuration: `${c.dur}s`, animationDelay: `${c.delay}s` }} />
-      ))}
-      <div className="swoosh" />
-      {items.bubbles.map((b, i) => (
-        <div key={i} className="bubble" style={{ left: `${b.left}%`, width: b.size, height: b.size, animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` }} />
-      ))}
+    <div className="arcade-bg" aria-hidden>
+      <div className="tile-pattern" />
     </div>
   );
 }
@@ -89,7 +65,7 @@ export function confetti(opts = {}) {
   confettiFire?.(opts);
 }
 
-const CONFETTI_COLORS = ['#19b8ff', '#62d321', '#ffbf1f', '#ff5a5f', '#a35cff', '#ffffff', '#ff6fcf'];
+const CONFETTI_COLORS = ['#ffd23a', '#ff2d2d', '#9dff3a', '#b04bff', '#ff7a1a', '#ffffff', '#19b8ff'];
 
 export function ConfettiLayer() {
   const ref = useRef();

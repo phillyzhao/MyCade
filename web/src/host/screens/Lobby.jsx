@@ -5,7 +5,7 @@ import { useHost, activePlayers } from '../store.js';
 import { onPlayerEvent, KEYBOARD_PID } from '../input.js';
 import { BRAND, AVATAR_NAME } from '../../brand.js';
 import { sound } from '../../sound.js';
-import PlayerBadge from './PlayerBadge.jsx';
+import { PlayerCard } from './PlayerBadge.jsx';
 
 const CPU_NAMES = ['Bloop', 'Zibzab', 'Pip', 'Mochi', 'Gizmo', 'Tofu'];
 
@@ -59,52 +59,67 @@ export default function Lobby() {
   const act = activePlayers(players);
   return (
     <div className="lobby fade-in">
-      <section className="lobby-hero">
-        <div className="hero-kicker">phone-powered party games</div>
-        <h1 className="display-title hero-title">{BRAND}</h1>
-        <p className="hero-sub">Your phone is the controller. You are the character.</p>
-        <div className="steps">
-          <div className="step glass">
-            <b>1</b>Scan the code
-          </div>
-          <div className="step glass">
-            <b>2</b>Tap to enable motion
-          </div>
-          <div className="step glass">
-            <b>3</b>Snap a photo, get your {AVATAR_NAME}
+      <section className="lobby-hero burst panel">
+        <div className="hero-inner">
+          <div className="pixel-title hero-kicker">YOUR PERSONAL ARCADE</div>
+          <h1 className="display-title hero-title">{BRAND.toUpperCase()}!</h1>
+          <div className="hero-steps">
+            <span>
+              <b>1</b> scan
+            </span>
+            <span>
+              <b>2</b> enable motion
+            </span>
+            <span>
+              <b>3</b> snap a pic, get your {AVATAR_NAME}
+            </span>
           </div>
         </div>
-      </section>
-
-      <section className="join-card glass bounce-in">
-        <div className="qr-wrap">{qr ? <img src={qr} alt="Join QR code" /> : <div className="qr-ph" />}</div>
-        <div className="join-code">
-          <span>ROOM</span>
-          <b>{room || '····'}</b>
+        <div className="join-card bounce-in">
+          <div className="qr-wrap">{qr ? <img src={qr} alt="Join QR code" /> : <div className="qr-ph" />}</div>
+          <div className="join-code">
+            <span>ROOM</span>
+            <b>{room || '····'}</b>
+          </div>
+          <button className="join-url" onClick={() => useHost.getState().cycleUrl()} title="Click to cycle network address">
+            {joinUrl.replace(/^https?:\/\//, '') || 'connecting…'}
+          </button>
         </div>
-        <button className="join-url" onClick={() => useHost.getState().cycleUrl()} title="Click to cycle network address">
-          {joinUrl.replace(/^https?:\/\//, '') || 'connecting…'}
-        </button>
       </section>
 
       <section className="lobby-players">
-        <div className="slots">
-          {Array.from({ length: Math.max(4, act.length) }, (_, i) => act[i]).map((p, i) =>
-            p ? <PlayerBadge key={p.id} player={p} big /> : <div key={`e${i}`} className="slot-empty glass">waiting…</div>,
-          )}
-        </div>
-        <div className="lobby-actions">
-          <button className="gloss-btn silver small" onClick={addCpu}>
-            + CPU player
-          </button>
-          <button className="gloss-btn silver small" onClick={addKeyboard}>
-            + Keyboard player
-          </button>
-          <button className="gloss-btn green" disabled={!act.length} onClick={() => (sound.sfx('select'), useHost.getState().setScreen('menu'))}>
-            Let's play! ▶
-          </button>
-        </div>
+        {Array.from({ length: Math.max(4, act.length) }, (_, i) => act[i]).map((p, i) =>
+          p ? <PlayerCard key={p.id} player={p} /> : <EmptyCard key={`e${i}`} n={i + 1} />,
+        )}
       </section>
+
+      <section className="lobby-actions">
+        <button className="gloss-btn silver small" onClick={addCpu}>
+          + CPU
+        </button>
+        <button className="gloss-btn silver small" onClick={addKeyboard}>
+          + Keyboard
+        </button>
+        <div className="lobby-hint pixel">{act.length ? 'press A on any phone to start' : 'waiting for players…'}</div>
+        <button className="gloss-btn green big-cta" disabled={!act.length} onClick={() => (sound.sfx('select'), useHost.getState().setScreen('menu'))}>
+          LET'S PLAY ▶
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function EmptyCard({ n }) {
+  return (
+    <div className="pcard empty">
+      <div className="pcard-art">
+        <span className="pixel">P{n}</span>
+      </div>
+      <div className="pcard-label">
+        <i className="stick" />
+        <span className="pixel">PRESS START</span>
+        <i className="btns" />
+      </div>
     </div>
   );
 }

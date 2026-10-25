@@ -17,7 +17,7 @@ const FRAMES = Number(new URLSearchParams(location.search).get('frames')) || 3;
 const LANE_W = 1.06;
 const HEAD_Z = -14;
 const PIN_SP = 0.3048;
-const BALL_R = 0.109;
+const BALL_R = 0.12;
 const PIN_H = 0.38;
 const PIN_R = 0.06;
 const START_Z = 0.7;
@@ -139,8 +139,8 @@ function makePin(world, x, z) {
   );
   // two colliders: belly + neck, total ~1.5 kg, low centre of mass
   // flat-bottomed belly cylinder (stable when standing) + light neck capsule => low centre of mass
-  world.createCollider(RAPIER.ColliderDesc.cylinder(0.095, 0.055).setTranslation(0, -0.095, 0).setDensity(900).setFriction(0.5).setRestitution(0.45), b);
-  world.createCollider(RAPIER.ColliderDesc.capsule(0.06, 0.032).setTranslation(0, 0.08, 0).setDensity(250).setFriction(0.5).setRestitution(0.45), b);
+  world.createCollider(RAPIER.ColliderDesc.cylinder(0.095, 0.055).setTranslation(0, -0.095, 0).setDensity(680).setFriction(0.45).setRestitution(0.5), b);
+  world.createCollider(RAPIER.ColliderDesc.capsule(0.06, 0.032).setTranslation(0, 0.08, 0).setDensity(200).setFriction(0.45).setRestitution(0.5), b);
   return b;
 }
 
@@ -203,8 +203,8 @@ function Scene({ game }) {
       want.set(0.25, 1.1, HEAD_Z + 2.3);
       look.set(0, 0.12, HEAD_Z - 0.4);
     } else {
-      want.set(g.aimX * 0.8, 1.35, START_Z + 2.6);
-      look.set(g.aimX * 0.3, 0.25, -7);
+      want.set(g.aimX * 0.6 + 0.55, 1.75, START_Z + 2.5);
+      look.set(g.aimX * 0.2, 0.0, -9);
     }
     const k = 1 - Math.pow(0.02, dt);
     camera.position.lerp(want, k);
@@ -234,14 +234,18 @@ function Scene({ game }) {
             </mesh>
             <mesh position={[s * (LANE_W / 2 + 0.29), 0.05, -7]} castShadow receiveShadow>
               <boxGeometry args={[0.06, 0.3, 20]} />
-              <meshPhysicalMaterial color="#ffffff" clearcoat={1} roughness={0.2} />
+              <meshPhysicalMaterial color="#2a1d21" clearcoat={1} roughness={0.2} />
+            </mesh>
+            <mesh position={[s * (LANE_W / 2 + 0.29), 0.21, -7]}>
+              <boxGeometry args={[0.07, 0.025, 20]} />
+              <meshBasicMaterial color={s < 0 ? '#ff2d2d' : '#ffd23a'} toneMapped={false} />
             </mesh>
           </group>
         ))}
         {/* underside of platform */}
         <mesh position={[0, -0.45, -7]}>
           <boxGeometry args={[1.8, 0.7, 20.5]} />
-          <meshPhysicalMaterial color="#e9f6ff" roughness={0.3} clearcoat={0.8} />
+          <meshPhysicalMaterial color="#1e1518" roughness={0.3} clearcoat={0.8} />
         </mesh>
         {/* approach */}
         <mesh position={[0, -0.001, 2.2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -251,7 +255,7 @@ function Scene({ game }) {
         {/* pinsetter canopy */}
         <mesh position={[0, 0.85, HEAD_Z - 1.4]}>
           <boxGeometry args={[1.8, 0.5, 2.8]} />
-          <meshPhysicalMaterial color="#2a9df4" clearcoat={1} roughness={0.15} />
+          <meshPhysicalMaterial color="#d4141b" clearcoat={1} roughness={0.15} />
         </mesh>
         <mesh position={[0, 0.25, HEAD_Z - 3.25]}>
           <boxGeometry args={[1.8, 1.4, 0.1]} />
@@ -372,6 +376,7 @@ class BowlingGame {
     this.ball = b;
     this.throwSpeed = speed;
     this.phase = 'roll';
+    this.hooks.onHud();
     this.anim.pose = 'bowl';
     this.anim.t = 0.6;
     this.t = 0;

@@ -85,6 +85,11 @@ export default function Menu() {
 
   return (
     <div className="menu fade-in">
+      <div className="menu-main">
+      <div className="menu-head">
+        <h1 className="display-title">PICK A GAME!</h1>
+        <span className="pixel">tilt or ◀ ▶ on your phone · A to play</span>
+      </div>
       <div className="tiles">
         {GAMES.map((g, i) => (
           <button
@@ -94,14 +99,21 @@ export default function Menu() {
             onMouseEnter={() => focus !== i && (setFocus(i), sound.sfx('tick'))}
             onClick={() => launch(i)}
           >
-            <TileArt id={g.id} />
-            <div className="tile-label">
+            <div className="art-wrap" style={{ position: 'relative', flex: 1, display: 'flex', minHeight: 0 }}>
               <div className="tile-tag">{g.tag}</div>
-              <div className="tile-title">{g.title}</div>
-              <div className="tile-meta">{g.players}</div>
+              <TileArt id={g.id} />
+            </div>
+            <div className="tile-label">
+              <i className="stick" />
+              <div className="tile-text">
+                <div className="tile-title">{g.title}</div>
+                <div className="tile-meta">{g.players}</div>
+              </div>
+              <i className="btns" />
             </div>
           </button>
         ))}
+      </div>
       </div>
       <aside className="side glass">
         <h3>Session standings</h3>
@@ -131,7 +143,7 @@ export default function Menu() {
             ◀ Lobby
           </button>
           <button className="gloss-btn orange small" disabled={!matches.length} onClick={() => useHost.getState().setScreen('podium')}>
-            🏆 Crown champion
+            🏆 CHAMPION
           </button>
         </div>
         <div className="hint">{GAMES[focus].motion}</div>

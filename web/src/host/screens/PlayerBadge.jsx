@@ -43,3 +43,41 @@ export default function PlayerBadge({ player, big, score, sub }) {
     </div>
   );
 }
+
+function statusText(player) {
+  const st = player.avatar?.status;
+  if (player.cpu) return 'CPU';
+  if (player.keyboard) return 'KEYBOARD';
+  if (!player.connected) return 'RECONNECTING';
+  if (st === 'processing') return `MAKING ${AVATAR_NAME.toUpperCase()}…`;
+  if (st === 'image') return '3D COOKING…';
+  if (st === 'ready') return `${AVATAR_NAME.toUpperCase()} READY`;
+  return 'READY';
+}
+
+/** Arcade-cabinet style card for the lobby. */
+export function PlayerCard({ player }) {
+  const img = player.avatar?.image;
+  const busy = player.avatar?.status === 'processing';
+  return (
+    <div className="pcard bounce-in" style={{ '--pc': player.color }}>
+      <div className="pcard-art">
+        {img ? <img src={img} alt="" /> : <span className="pcard-initial">{(player.name || '?').slice(0, 1).toUpperCase()}</span>}
+        {busy && <div className="pcard-busy pixel">✨ making your {AVATAR_NAME}</div>}
+        {(player.cpu || player.keyboard) && (
+          <button className="kick" onClick={() => useHost.getState().removePlayer(player.id)} title="Remove">
+            ×
+          </button>
+        )}
+      </div>
+      <div className="pcard-label">
+        <i className="stick" />
+        <div className="pcard-text">
+          <span className="pcard-name pixel">{player.name}</span>
+          <span className="pcard-status pixel">{statusText(player)}</span>
+        </div>
+        <i className="btns" />
+      </div>
+    </div>
+  );
+}
