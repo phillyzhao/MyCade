@@ -1,12 +1,12 @@
-// Cloud Karts: everyone races at once on one shared screen. Phone sideways = steering wheel,
+// Cloud Karts: everyone races at once in split screen (chase cam per player). Phone sideways = steering wheel,
 // right half gas, left half brake, shake to fire a full boost meter. 3 laps.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { MODE } from '@shared/protocol.js';
 import { Avatar, makeAnim } from '../../three/Avatar.jsx';
-import { SkyDome, Lights } from '../../three/Scenery.jsx';
+import { SkyDome, Lights, Hills } from '../../three/Scenery.jsx';
+import { StudioEnv, Post } from '../../three/Stage.jsx';
 import { getInput, onPlayerEvent } from '../../host/input.js';
 import { sendScreen, sendHaptic } from '../../host/net.js';
 import { popup } from '../../ui/fx.jsx';
@@ -64,6 +64,42 @@ function trackGeometry(halfW, y = 0, colorFn) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+const WALL_OFF = HALF_W + 2.3;
+const ARCHES = [0.1, 0.35, 0.62, 0.9].map((u) => Math.floor(u * N_SAMPLES));
+
+function nearestGlobal(x, z) {
+  let best = 0;
+  let bd = Infinity;
+  for (let i = 0; i < N_SAMPLES; i += 3) {
+    const d = (SAMPLES[i].x - x) ** 2 + (SAMPLES[i].z - z) ** 2;
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+function wallGeometry(off, y0, y1) {
+  const pos = [];
+  const idx = [];
+  for (let i = 0; i <= N_SAMPLES; i++) {
+    const k = i % N_SAMPLES;
+    const p = SAMPLES[k];
+    const n = NORMALS[k];
+    pos.push(p.x + n.x * off, y0, p.z + n.z * off, p.x + n.x * off, y1, p.z + n.z * off);
+    if (i < N_SAMPLES) {
+      const a = i * 2;
+      idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setIndex(idx);
   g.computeVertexNormals();
   return g;
@@ -175,8 +211,8 @@ class RaceGame {
       k.x += Math.sin(k.h) * k.speed * dt;
       k.z += Math.cos(k.h) * k.speed * dt;
       // soft outer wall
-      if (Math.abs(lateral) > HALF_W + 2.2) {
-        const push = (Math.abs(lateral) - HALF_W - 2.2) * Math.sign(lateral);
+      if (Math.abs(lateral) > WALL_OFF - 0.6) {
+        const push = (Math.abs(lateral) - (WALL_OFF - 0.6)) * Math.sign(lateral);
         k.x -= NORMALS[k.idx].x * push;
         k.z -= NORMALS[k.idx].z * push;
         k.speed *= 0.9;
@@ -215,6 +251,8 @@ class RaceGame {
         const dz = b.z - a.z;
         const d = Math.hypot(dx, dz);
         if (d > 0 && d < 1.3) {
+          a.bumped = true;
+          b.bumped = true;
           const o = (1.3 - d) / 2;
           a.x -= (dx / d) * o;
           a.z -= (dz / d) * o;
@@ -360,11 +398,14 @@ function Kart({ k }) {
       <group position={[0, 0.3, -0.15]}>
         <Avatar player={k.p} anim={k.anim} scale={0.85} />
       </group>
-      <Html position={[0, 1.55, 0]} center distanceFactor={22} zIndexRange={[5, 0]}>
-        <div className="isle-tag" style={{ '--pc': k.p.color }}>
-          {k.place}. {k.p.name}
-        </div>
-      </Html>
+      <mesh position={[0, 1.7, 0]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.09, 0.18, 4]} />
+        <meshBasicMaterial color={k.p.color} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.95, 20]} />
+        <meshBasicMaterial color="#000" transparent opacity={0.35} />
+      </mesh>
     </group>
   );
 }
@@ -375,6 +416,10 @@ function Track() {
   const curbR = useMemo(() => trackGeometry([-HALF_W - 0.35, -HALF_W], 0.02, (i) => (Math.floor(i / 6) % 2 ? [1, 0.18, 0.18] : [1, 1, 1])), []);
   const neonL = useMemo(() => trackGeometry([HALF_W + 0.35, HALF_W + 0.45], 0.03), []);
   const neonR = useMemo(() => trackGeometry([-HALF_W - 0.45, -HALF_W - 0.35], 0.03), []);
+  const wallL = useMemo(() => wallGeometry(WALL_OFF, 0, 0.7), []);
+  const wallR = useMemo(() => wallGeometry(-WALL_OFF, 0, 0.7), []);
+  const wallTopL = useMemo(() => trackGeometry([WALL_OFF - 0.06, WALL_OFF + 0.06], 0.71), []);
+  const wallTopR = useMemo(() => trackGeometry([-WALL_OFF - 0.06, -WALL_OFF + 0.06], 0.71), []);
   const start = SAMPLES[0];
   const startAngle = Math.atan2(TANGENTS[0].x, TANGENTS[0].z);
   const checker = useMemo(() => {
@@ -394,7 +439,7 @@ function Track() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[140, 110]} />
-        <meshStandardMaterial color="#2d6b1f" roughness={1} />
+        <meshStandardMaterial color="#4c9a2a" roughness={1} />
       </mesh>
       <mesh geometry={road} receiveShadow>
         <meshStandardMaterial color="#34303a" roughness={0.8} />
@@ -438,13 +483,42 @@ function Track() {
           </mesh>
         );
       })}
+      <mesh geometry={wallL}>
+        <meshStandardMaterial color="#2a1d21" side={THREE.DoubleSide} />
+      </mesh>
+      <mesh geometry={wallR}>
+        <meshStandardMaterial color="#2a1d21" side={THREE.DoubleSide} />
+      </mesh>
+      <mesh geometry={wallTopL}>
+        <meshBasicMaterial color="#ffd23a" toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh geometry={wallTopR}>
+        <meshBasicMaterial color="#ff2d2d" toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <Hills radius={75} y={-0.5} />
+      {ARCHES.map((a) => {
+        const p = SAMPLES[a];
+        const ang = Math.atan2(TANGENTS[a].x, TANGENTS[a].z);
+        return (
+          <group key={a} position={[p.x, 0, p.z]} rotation={[0, ang, 0]}>
+            <mesh>
+              <torusGeometry args={[HALF_W + 1.4, 0.16, 8, 32, Math.PI]} />
+              <meshBasicMaterial color={a % 2 ? '#b04bff' : '#9dff3a'} toneMapped={false} />
+            </mesh>
+          </group>
+        );
+      })}
       {/* trackside trees */}
-      {Array.from({ length: 26 }, (_, i) => {
-        const s = SAMPLES[(i * 23) % N_SAMPLES];
-        const n = NORMALS[(i * 23) % N_SAMPLES];
+      {Array.from({ length: 70 }, (_, i) => {
+        const s = SAMPLES[(i * 17) % N_SAMPLES];
+        const n = NORMALS[(i * 17) % N_SAMPLES];
         const side = i % 2 ? 1 : -1;
-        const x = s.x + n.x * side * (HALF_W + 3 + (i % 3));
-        const z = s.z + n.z * side * (HALF_W + 3 + (i % 3));
+        const off = HALF_W + 4 + (i % 4) * 1.6;
+        const x = s.x + n.x * side * off;
+        const z = s.z + n.z * side * off;
+        // skip trees that would land on another stretch of track
+        const ni = nearestGlobal(x, z);
+        if (Math.hypot(SAMPLES[ni].x - x, SAMPLES[ni].z - z) < HALF_W + 3) return null;
         return (
           <group key={i} position={[x, 0, z]}>
             <mesh position={[0, 0.5, 0]} castShadow>
@@ -462,31 +536,94 @@ function Track() {
   );
 }
 
+// split-screen layout: rects in CSS pixels, origin top-left
+function layout(n, W, H) {
+  if (n <= 1) return [{ x: 0, y: 0, w: W, h: H }];
+  if (n === 2) return [{ x: 0, y: 0, w: W / 2, h: H }, { x: W / 2, y: 0, w: W / 2, h: H }];
+  const out = [];
+  const rows = Math.ceil(n / 2);
+  for (let i = 0; i < n; i++) out.push({ x: (i % 2) * (W / 2), y: Math.floor(i / 2) * (H / rows), w: W / 2, h: H / rows });
+  return out;
+}
+
 function Scene({ game }) {
-  const { camera } = useThree();
   const g = game.current;
-  const look = useRef(new THREE.Vector3());
-  useFrame((_, dt) => {
-    g.update(Math.min(dt, 1 / 20));
-    // shared camera: keep the pack framed, never lose sight of the track
-    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-    for (const k of g.karts) {
-      minX = Math.min(minX, k.x); maxX = Math.max(maxX, k.x);
-      minZ = Math.min(minZ, k.z); maxZ = Math.max(maxZ, k.z);
-    }
-    const cx = (minX + maxX) / 2;
-    const cz = (minZ + maxZ) / 2;
-    const span = Math.max(maxX - minX, (maxZ - minZ) * 1.6, 10);
-    const dist = Math.min(46, 8 + span * 0.95);
-    const want = new THREE.Vector3(cx, dist * 0.82, cz + dist * 0.62);
-    camera.position.lerp(want, Math.min(1, dt * 1.8));
-    look.current.lerp(new THREE.Vector3(cx, 0, cz - 0.5), Math.min(1, dt * 2.5));
-    camera.lookAt(look.current);
-  });
+  const cams = useMemo(() => g.karts.map(() => new THREE.PerspectiveCamera(64, 1, 0.1, 400)), [g]);
+  const camState = useRef(
+    g.karts.map((k) => ({
+      pos: new THREE.Vector3(k.x - Math.sin(k.h) * 4, 2, k.z - Math.cos(k.h) * 4),
+      look: new THREE.Vector3(k.x, 0.5, k.z),
+    })),
+  );
+  const tmp = useMemo(() => ({ want: new THREE.Vector3(), look: new THREE.Vector3() }), []);
+  const introStart = useRef(performance.now());
+  useFrame((state, dtRaw) => {
+    const dt = Math.min(dtRaw, 1 / 20);
+    g.update(dt);
+    const { gl, scene, size } = state;
+    const rects = layout(g.karts.length, size.width, size.height);
+    gl.setScissorTest(true);
+    g.karts.forEach((k, i) => {
+      const cam = cams[i];
+      const cs = camState.current[i];
+      // turn rate drives the Joyride-style swing + roll
+      const turn = cs.lastH == null ? 0 : (k.h - cs.lastH) / Math.max(dt, 1e-3);
+      cs.lastH = k.h;
+      cs.turn = (cs.turn || 0) + (THREE.MathUtils.clamp(turn, -3, 3) - (cs.turn || 0)) * Math.min(1, dt * 4);
+      const fx = Math.sin(k.h);
+      const fz = Math.cos(k.h);
+      const rx = -fz; // right vector
+      const rz = fx;
+      const spd = Math.abs(k.speed);
+      if (!g.running) {
+        // pre-race swoop: orbit from the front of the kart around to the chase position
+        const tIntro = Math.min(1, (performance.now() - (g.introStart ?? introStart.current)) / 3200);
+        const e = 1 - Math.pow(1 - tIntro, 3);
+        const ang = k.h + Math.PI * (1 - e) + (i % 2 ? -0.4 : 0.4) * (1 - e);
+        const dist = 2.6 + e * 1.5;
+        tmp.want.set(k.x - Math.sin(ang) * dist, 1.0 + e * 1.2, k.z - Math.cos(ang) * dist);
+        tmp.look.set(k.x, 0.55, k.z);
+        cs.pos.copy(tmp.want);
+        cs.look.copy(tmp.look);
+      } else {
+        const back = 3.7 + Math.min(1.6, spd * 0.12) + (k.boosting > 0 ? 0.8 : 0);
+        const swing = -cs.turn * 0.55; // camera slides to the outside of the turn
+        tmp.want.set(k.x - fx * back + rx * swing, 2.0 + spd * 0.02, k.z - fz * back + rz * swing);
+        tmp.look.set(k.x + fx * 5 - rx * cs.turn * 0.9, 0.35, k.z + fz * 5 - rz * cs.turn * 0.9);
+        cs.pos.lerp(tmp.want, Math.min(1, dt * 6));
+        cs.look.lerp(tmp.look, Math.min(1, dt * 8));
+      }
+      cam.position.copy(cs.pos);
+      if (k.boosting > 0 || cs.shake > 0) {
+        const a = k.boosting > 0 ? 0.035 : cs.shake * 0.12;
+        cam.position.x += (Math.random() - 0.5) * a;
+        cam.position.y += (Math.random() - 0.5) * a;
+      }
+      cs.shake = Math.max(0, (cs.shake || 0) - dt * 2);
+      if (k.bumped) {
+        cs.shake = 1;
+        k.bumped = false;
+      }
+      cam.fov += ((62 + (k.boosting > 0 ? 14 : 0) + Math.min(8, spd * 0.55)) - cam.fov) * Math.min(1, dt * 5);
+      // roll into the turn
+      cam.up.set(rx * cs.turn * 0.06, 1, rz * cs.turn * 0.06).normalize();
+      const r = rects[i];
+      cam.aspect = r.w / r.h;
+      cam.updateProjectionMatrix();
+      cam.lookAt(cs.look);
+      const y = size.height - r.y - r.h;
+      gl.setViewport(r.x, y, r.w, r.h);
+      gl.setScissor(r.x, y, r.w, r.h);
+      gl.render(scene, cam);
+    });
+    gl.setScissorTest(false);
+  }, 1);
   return (
     <>
       <SkyDome />
+      <StudioEnv />
       <Lights shadowSize={26} />
+      <fog attach="fog" args={['#e0607a', 35, 120]} />
       <Track />
       {g.karts.map((k) => (
         <Kart key={k.p.id} k={k} />
@@ -495,15 +632,64 @@ function Scene({ game }) {
   );
 }
 
-export default function Racing({ players, playing, onDone }) {
+function RacerHud({ k, rect, total, t }) {
+  const tan = TANGENTS[k.idx];
+  const wrongWay = k.speed > 2 && Math.sin(k.h) * tan.x + Math.cos(k.h) * tan.z < -0.3;
+  const lapShown = Math.max(1, Math.min(LAPS, k.lap + 1));
+  return (
+    <div className="racer-hud" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, '--pc': k.p.color }}>
+      <div className="rh-top">
+        <div className="rh-lap">
+          <span className="rh-lap-label">LAP</span>
+          <span className="rh-lap-num">
+            {lapShown}
+            <small>/{LAPS}</small>
+          </span>
+        </div>
+        <div className="rh-time">{fmtTime(k.finished ?? t)}</div>
+        <div className="rh-name">
+          <AvatarHead player={k.p} size={34} />
+          {k.p.name}
+        </div>
+      </div>
+      {wrongWay && <div className="rh-center">WRONG WAY!</div>}
+      {k.finished != null && <div className="rh-center done">FINISHED!</div>}
+      <div className="rh-bottom">
+        <div className="rh-boost">
+          <div className={`rh-boostbar ${k.boost >= 1 ? 'full' : ''}`}>
+            <i style={{ width: `${k.boost * 100}%` }} />
+          </div>
+          <span>{k.boost >= 1 ? 'SHAKE TO BOOST!' : 'BOOST'}</span>
+        </div>
+        <div className="rh-speed">
+          {Math.round(Math.abs(k.speed) * 9.5)}
+          <small>km/h</small>
+        </div>
+        <div className="rh-place">
+          {k.place}
+          <sup>{ordinal(k.place).slice(-2)}</sup>
+          <small>/{total}</small>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Racing({ players, playing, phase, onDone }) {
   const game = useRef(null);
+  const wrap = useRef(null);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
   const [, setTick] = useState(0);
+  const [size, setSize] = useState({ w: innerWidth, h: innerHeight - 62 });
   if (!game.current) game.current = new RaceGame(players, { onDone: (r) => onDoneRef.current(r) });
   useEffect(() => {
     if (playing && !game.current.running) game.current.start();
   }, [playing]);
+  useEffect(() => {
+    // replay the camera swoop during the 3-2-1
+    if (phase === 'countdown') game.current.introStart = performance.now();
+  }, [phase]);
   useEffect(() => {
     for (const k of game.current.karts) {
       const np = players.find((p) => p.id === k.p.id);
@@ -512,43 +698,30 @@ export default function Racing({ players, playing, onDone }) {
   }, [players]);
   useEffect(() => onPlayerEvent((pid, ev) => game.current?.onEvent(pid, ev)), []);
   useEffect(() => {
-    const iv = setInterval(() => setTick((x) => x + 1), 200);
+    const iv = setInterval(() => setTick((x) => x + 1), 100);
     sendScreen('all', { mode: MODE.RACE, title: 'Get ready', prompt: 'Hold your phone sideways like a wheel', sub: 'Right = gas · Left = brake', boost: 0 });
+    const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
+    if (wrap.current) ro.observe(wrap.current);
     return () => {
       clearInterval(iv);
+      ro.disconnect();
       game.current?.dispose();
     };
   }, []);
   const g = game.current;
-  const corners = [
-    { left: 16, top: 14 },
-    { right: 16, top: 14 },
-    { left: 16, bottom: 16 },
-    { right: 16, bottom: 16 },
-  ];
+  const rects = layout(g.karts.length, size.w, size.h);
   return (
-    <>
-      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 30, 22], fov: 42 }}>
+    <div ref={wrap} style={{ position: 'absolute', inset: 0 }}>
+      <Canvas dpr={[1, 1.5]} gl={{ antialias: true }}>
         <Scene game={game} />
       </Canvas>
       <div className="hud">
         {g.karts.map((k, i) => (
-          <div key={k.p.id} className="race-chip panel" style={{ ...corners[i % 4], ...(i >= 4 ? { top: 90 + (i - 4) * 70 } : {}), borderColor: k.p.color }}>
-            <span className="pos">{ordinal(k.place)}</span>
-            <AvatarHead player={k.p} size={36} />
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>{k.p.name}</div>
-              <div className="lap">{k.finished != null ? fmtTime(k.finished) : `LAP ${Math.max(1, Math.min(LAPS, k.lap + 1))}/${LAPS}`}</div>
-              <div className={`boostbar ${k.boost >= 1 ? 'full' : ''}`}>
-                <i style={{ width: `${k.boost * 100}%` }} />
-              </div>
-            </div>
-          </div>
+          <RacerHud key={k.p.id} k={k} rect={rects[i]} total={g.karts.length} t={g.t} />
         ))}
-        <div className="timer-chip panel" style={{ fontSize: 30 }}>
-          {fmtTime(g.t)}
-        </div>
+        {g.karts.length > 1 && <div className="split-v" />}
+        {g.karts.length > 2 && <div className="split-h" />}
       </div>
-    </>
+    </div>
   );
 }

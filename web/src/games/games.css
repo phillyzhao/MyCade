@@ -34,3 +34,29 @@
 .tennis-vs { font: 900 14px var(--font-ui); color: var(--text-dim); }
 .isle-tag { font: 700 14px var(--font-pixel); color: #fff; background: var(--pc); border: 2px solid #000; padding: 3px 10px; border-radius: 8px; white-space: nowrap; box-shadow: 0 3px 0 #000; text-shadow: 1px 1px 0 #000; }
 .timer-chip { font: 400 44px var(--font-display) !important; color: var(--yellow) !important; }
+
+/* ---------- racing split-screen HUD ---------- */
+.racer-hud { position: absolute; overflow: hidden; pointer-events: none; }
+.rh-top { position: absolute; left: 14px; right: 14px; top: 12px; display: flex; align-items: center; gap: 12px; }
+.rh-lap { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 66px; height: 66px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #3a2a2e, #140d0f); border: 4px solid var(--yellow); box-shadow: 0 4px 0 #000; }
+.rh-lap-label { font: 700 10px var(--font-pixel); color: var(--yellow); line-height: 1; }
+.rh-lap-num { font: 400 28px var(--font-display); color: #fff; line-height: 1; -webkit-text-stroke: 1px #000; }
+.rh-lap-num small { font-size: 14px; color: var(--text-dim); }
+.rh-time { font: 400 30px var(--font-display); color: var(--yellow); -webkit-text-stroke: 2px #000; paint-order: stroke fill; text-shadow: 0 3px 0 #000; }
+.rh-name { margin-left: auto; display: flex; align-items: center; gap: 8px; font: 400 22px var(--font-display); color: #fff; -webkit-text-stroke: 1.5px #000; paint-order: stroke fill; background: rgba(0, 0, 0, 0.45); border: 2px solid var(--pc); border-radius: 12px; padding: 4px 12px 4px 4px; }
+.rh-center { position: absolute; left: 0; right: 0; top: 40%; text-align: center; font: 400 48px var(--font-display); color: var(--red); -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 5px 0 #000; animation: pulse 0.6s infinite; }
+.rh-center.done { color: var(--lime); animation: none; }
+.rh-bottom { position: absolute; left: 14px; right: 14px; bottom: 10px; display: flex; align-items: flex-end; gap: 16px; }
+.rh-boost { flex: 1; max-width: 46%; display: flex; flex-direction: column; gap: 4px; }
+.rh-boost span { font: 700 11px var(--font-pixel); color: #fff; text-shadow: 2px 2px 0 #000; }
+.rh-boostbar { height: 16px; border-radius: 99px; background: rgba(0, 0, 0, 0.55); border: 3px solid #000; box-shadow: 0 0 0 2px #fff3; overflow: hidden; }
+.rh-boostbar i { display: block; height: 100%; background: linear-gradient(90deg, #ffb21a, #ffd23a); }
+.rh-boostbar.full { box-shadow: 0 0 16px var(--yellow); animation: pulse 0.5s infinite; }
+.rh-boostbar.full i { background: linear-gradient(90deg, var(--lime), #fff); }
+.rh-speed { font: 400 34px var(--font-display); color: #fff; -webkit-text-stroke: 2px #000; paint-order: stroke fill; text-shadow: 0 3px 0 #000; line-height: 1; }
+.rh-speed small { font: 700 11px var(--font-pixel); margin-left: 4px; color: var(--text-dim); -webkit-text-stroke: 0; }
+.rh-place { margin-left: auto; font: 400 76px var(--font-display); line-height: 0.85; color: var(--yellow); -webkit-text-stroke: 3px #2a0604; paint-order: stroke fill; text-shadow: 0 3px 0 #ff9a1a, 0 6px 0 #b8240f, 0 9px 0 #3a0306; }
+.rh-place sup { font-size: 32px; vertical-align: top; margin-left: 2px; }
+.rh-place small { font-size: 34px; color: #fff; }
+.split-v { position: absolute; left: 50%; top: 0; bottom: 0; width: 6px; margin-left: -3px; background: #000; box-shadow: 0 0 0 1px var(--line-hi); }
+.split-h { position: absolute; top: 50%; left: 0; right: 0; height: 6px; margin-top: -3px; background: #000; box-shadow: 0 0 0 1px var(--line-hi); }

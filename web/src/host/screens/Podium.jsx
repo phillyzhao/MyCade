@@ -7,6 +7,7 @@ import { sendScreen } from '../net.js';
 import { leaderboard, headToHead, rivalryLine, bestRecords } from '../rivalry.js';
 import { Avatar, makeAnim } from '../../three/Avatar.jsx';
 import { SkyDome, Lights } from '../../three/Scenery.jsx';
+import { StudioEnv, Post } from '../../three/Stage.jsx';
 import { confetti, popup } from '../../ui/fx.jsx';
 import { sound } from '../../sound.js';
 import { onPlayerEvent } from '../input.js';
@@ -52,8 +53,10 @@ export default function Podium() {
   return (
     <div className="podium fade-in">
       <div className="podium-3d">
-        <Canvas shadows camera={{ position: [0, 1.6, 4.2], fov: 40 }} dpr={[1, 2]}>
+        <Canvas shadows="soft" camera={{ position: [0, 1.6, 4.2], fov: 40 }} dpr={[1, 2]}>
           <SkyDome />
+      <StudioEnv />
+      <Post />
           <Lights />
           <group position={[0, -0.6, 0]}>
             <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>

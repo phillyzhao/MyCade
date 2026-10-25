@@ -3,7 +3,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function SkyDome({ top = '#0b0414', mid = '#3c0f3a', bottom = '#16060f', radius = 120 }) {
+export function SkyDome({ top = '#1a0b3d', mid = '#c2386f', bottom = '#ffa45c', radius = 120 }) {
   const mat = useMemo(
     () =>
       new THREE.ShaderMaterial({

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { MODE } from '@shared/protocol.js';
 import { Avatar, makeAnim } from '../../three/Avatar.jsx';
 import { SkyDome, Lights } from '../../three/Scenery.jsx';
+import { StudioEnv, Post } from '../../three/Stage.jsx';
 import { onPlayerEvent } from '../../host/input.js';
 import { sendScreen, sendHaptic } from '../../host/net.js';
 import { popup } from '../../ui/fx.jsx';
@@ -498,6 +499,7 @@ function Scene({ game }) {
   const shadowRef = useRef();
   const trailRef = useRef([]);
   const entRefs = useRef([]);
+  const look = useRef(new THREE.Vector3(0, 0.5, -2.5));
   useFrame((_, dtRaw) => {
     const dt = Math.min(dtRaw, 1 / 20);
     g.update(dt);
@@ -523,12 +525,16 @@ function Scene({ game }) {
       r.position.set(e.x, 0, e.z);
       r.rotation.y = e.t === 0 ? Math.PI : 0;
     });
-    camera.position.lerp(new THREE.Vector3(b.x * 0.15, 9.5, 17), 0.05);
-    camera.lookAt(0, 0, -1.5);
+    // Wii-style: low behind the near team, drifting gently with the ball
+    camera.position.lerp(new THREE.Vector3(b.x * 0.25, 3.9, 15.2), Math.min(1, dt * 2));
+    look.current.lerp(new THREE.Vector3(b.x * 0.35, 0.2, -1.8), Math.min(1, dt * 2.5));
+    camera.lookAt(look.current);
   });
   return (
     <>
       <SkyDome />
+      <StudioEnv />
+      <Post />
       <Lights shadowSize={14} />
       <Court />
       {g.ents.map((e, i) => (
@@ -590,7 +596,7 @@ export default function Tennis({ players, playing, onDone }) {
   );
   return (
     <>
-      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 9.5, 17], fov: 45 }}>
+      <Canvas shadows="soft" dpr={[1, 2]} camera={{ position: [0, 3.4, 13.6], fov: 52 }}>
         <Scene game={game} />
       </Canvas>
       <div className="hud">

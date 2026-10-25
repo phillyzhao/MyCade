@@ -6,6 +6,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { MODE } from '@shared/protocol.js';
 import { Avatar, makeAnim } from '../../three/Avatar.jsx';
 import { SkyDome, Lights, Clouds, Bubbles } from '../../three/Scenery.jsx';
+import { StudioEnv, Post } from '../../three/Stage.jsx';
 import { getInput, onPlayerEvent } from '../../host/input.js';
 import { sendScreen, sendHaptic } from '../../host/net.js';
 import { popup, confetti } from '../../ui/fx.jsx';
@@ -216,6 +217,8 @@ function Scene({ game }) {
   return (
     <>
       <SkyDome />
+      <StudioEnv />
+      <Post />
       <Lights shadowSize={10} target={[0, 0, -6]} />
       <Clouds count={14} y={-6} spread={60} z={-20} />
       <Clouds count={8} y={10} spread={60} z={-40} />
@@ -640,7 +643,7 @@ export default function Bowling({ players, playing, onDone }) {
   const cur = g.currentPlayer();
   return (
     <>
-      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 1.4, 3.4], fov: 50, near: 0.05, far: 300 }} gl={{ antialias: true }}>
+      <Canvas shadows="soft" dpr={[1, 2]} camera={{ position: [0, 1.4, 3.4], fov: 50, near: 0.05, far: 300 }} gl={{ antialias: true }}>
         <Scene game={game} />
       </Canvas>
       <div className="hud">
